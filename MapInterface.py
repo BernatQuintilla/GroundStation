@@ -12,6 +12,7 @@ class MapFrameClass:
     def __init__(self, dron):
         # guardamos el objeto de la clase dron con el que estamos controlando el dron
         self.dron = dron
+        self.altura = 0
 
         # atributos necesarios para crear el geofence
         self.vertex_count = 4
@@ -137,11 +138,17 @@ class MapFrameClass:
         self.tele_frame.rowconfigure(1, weight=2)
         self.tele_frame.columnconfigure(0, weight=2)
 
-        self.AlturaBtn = tk.Button(self.tele_frame, text="Altura", bg="dark orange", fg="black")
-        self.AlturaBtn.grid(row=0, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
+        self.AlturaLabel = tk.Label(
+            self.tele_frame,
+            text=f"Altura: {self.altura} m",
+            bg="light gray",
+            fg="black",
+            width=12,
+        )
+        self.AlturaLabel.grid(row=0, column=1, columnspan=2, padx=5, pady=3, sticky="nesw")
 
         self.TrazadoBtn = tk.Button(self.tele_frame, text="Activar trazado", bg="black", fg="white", command= self.set_trace)
-        self.TrazadoBtn.grid(row=1, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
+        self.TrazadoBtn.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
 
 
         return self.MapFrame
@@ -197,6 +204,7 @@ class MapFrameClass:
                 self.dron.stop_sending_telemetry_info()
             self.informar('DRON_OCULTO')
 
+    # ===== INFORMAR ======
     def informar(self, mensaje):
         if mensaje == "EN CASA":
             # pongo el boton RTL en verde
@@ -239,12 +247,14 @@ class MapFrameClass:
             self.ShowDronBtn['fg'] = 'white'
             self.ShowDronBtn['text'] = 'Mostrar dron'
 
+    # ===== DATOS DE TELEMETRÍA =====
     # vendremos aquí cada vez que se reciba un paquete de datos de telemetría
     def process_telemetry_info(self, telemetry_info):
         # recupero la posición del dron para redibujar el icono en el mapa
         lat = telemetry_info['lat']
         lon = telemetry_info['lon']
-
+        self.altura = round(telemetry_info['alt'],2)
+        self.AlturaLabel.config(text=f"Altura: {self.altura} m")
         if self.trace:
             # dibujamos el ratro
             if self.last_position:
@@ -266,16 +276,20 @@ class MapFrameClass:
     # ======= MARCAR TRAZADO DEL DRON =======
     def set_trace(self):
         self.trace = not self.trace
+
+        if self.TrazadoBtn['bg'] == 'black':
+            self.informar("TRAZADO_ON")
+        elif self.TrazadoBtn['bg'] == 'green':
+            self.informar("TRAZADO_OFF")
+
         if self.trace:
             if not self.dron.sendTelemetryInfo:
                 self.dron.send_telemetry_info(self.process_telemetry_info)
-                self.informar("TRAZADO_ON")
         else:
             self.map_widget.delete_all_path()
             self.last_position = []
             if not self.marker:
                 self.dron.stop_sending_telemetry_info()
-                self.informar("TRAZADO_OFF")
 
     # ====== GEOFENCE =======
     # aqui venimos cuando tenemos ya definido el geofence y lo queremos enviar al dron
@@ -290,12 +304,12 @@ class MapFrameClass:
             name="GeoFence_polygon"
         )
 
-        self.dron.setGEOFence(json.dumps(self.geofencePoints))
+        #self.dron.setGEOFence(json.dumps(self.geofencePoints))
 
         # activamos el geofence y le decimos que en caso de llegar al límite se quede allí parado
         parameters = json.dumps([
             {'ID': "FENCE_ENABLE", 'Value': 1},
             {'ID': "FENCE_ACTION", 'Value': 4}
         ])
-        self.dron.setParams(parameters)
-        messagebox.showinfo("Operación correcta", "El geo fence se ha establecido correctamente!")
+        #self.dron.setParams(parameters)
+        #messagebox.showinfo("Operación correcta", "El geo fence se ha establecido correctamente!")
