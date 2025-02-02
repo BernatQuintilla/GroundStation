@@ -6,31 +6,26 @@ from tkinter import messagebox
 from tkinter import ttk
 from pymavlink import mavutil
 from PIL import Image, ImageTk
-from map_funcions import *
 
 class MapFrameClass:
 
     def __init__(self, dron):
         # guardamos el objeto de la clase dron con el que estamos controlando el dron
         self.dron = dron
+
         # atributos necesarios para crear el geofence
-        self.setting_geofence = False
-        self.vertex_count = 0
-        self.geofencePoints = []
-
-        # aqui guardaremos los elementos que usemos para dibujar el geofence
-        # de manera que podamos recuperarlos para borrarlos
-        self.geofenceElements = []
-
-        # atributos para poder establecer WP/ realizar GO TO
-        self.destination_WP = None
-        self.reach_WP = False
-
-
+        self.vertex_count = 4
+        self.geofencePoints = [
+            {'lat': lat, 'lon': lon} for lat, lon in [
+                (41.2764214, 1.9882317),
+                (41.2761916, 1.9883283),
+                (41.2763750, 1.9891195),
+                (41.2766119, 1.9890162)
+            ]
+        ]
         # atributos para establecer el trazado del dron
         self.trace = False
         self.last_position = None  # actualizar trazado
-
 
         # Iconos del dron y markers
         self.drone_marker = None
@@ -44,11 +39,12 @@ class MapFrameClass:
         self.marker_icon = ImageTk.PhotoImage(self.resized_marker_icon)
 
     def buildFrame(self, fatherFrame):
+
         self.MapFrame = tk.Frame(fatherFrame)  # create new frame where the map will be allocated
 
         # creamos el widget para el mapa
-        self.map_widget = tkintermapview.TkinterMapView(self.MapFrame, width=900, height=600, corner_radius=0)
-        self.map_widget.grid(row=1, column=0, columnspan=6, padx=5, pady=5)
+        self.map_widget = tkintermapview.TkinterMapView(self.MapFrame, width=1000, height=600, corner_radius=0)
+        self.map_widget.grid(row=1, column=0, columnspan=13, padx=5, pady=5)
         # cargamos la imagen del dronlab
         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga",
                                             max_zoom=22)
@@ -68,150 +64,116 @@ class MapFrameClass:
         self.MapFrame.columnconfigure(3, weight=1)
         self.MapFrame.columnconfigure(4, weight=1)
         self.MapFrame.columnconfigure(5, weight=1)
+        self.MapFrame.columnconfigure(6, weight=1)
+        self.MapFrame.columnconfigure(7, weight=1)
+        self.MapFrame.columnconfigure(8, weight=1)
+        self.MapFrame.columnconfigure(9, weight=1)
 
+        # === GEOFENCE ===
+        self.GeoFence()
 
-        # ===== FRAME DE GEO FENCE ======
-        self.geofence_frame = tk.LabelFrame(self.MapFrame, text="Geo Fence")
-        self.geofence_frame.grid(row=0, column=0, columnspan=3, padx=10, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+        # === FRAME CONTROL ===
+        self.control_frame = tk.LabelFrame(self.MapFrame, text="Control")
+        self.control_frame.grid(row=0, column=0, columnspan=3, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
 
-        self.geofence_frame.rowconfigure(0, weight=1)
-        self.geofence_frame.rowconfigure(1, weight=1)
+        self.control_frame.rowconfigure(0, weight=2)
+        self.control_frame.rowconfigure(1, weight=2)
+        self.control_frame.columnconfigure(0, weight=2)
+        self.control_frame.columnconfigure(1, weight=2)
 
-        self.geofence_frame.columnconfigure(0, weight=1)
-        self.geofence_frame.columnconfigure(1, weight=1)
+        self.connectBtn = tk.Button(self.control_frame, text="Conectar", bg="dark orange", fg="black",command=self.connect)
+        self.connectBtn.grid(row=0, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        self.Button1 = tk.Button(self.geofence_frame, text="Crear Geo Fence", bg="dark green", fg="white",
-                                 command=self.activate_geofence_mode)
-        self.Button1.grid(row=0, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
+        self.armBtn = tk.Button(self.control_frame, text="Armar", bg="dark orange", fg="black",command=self.arm)
+        self.armBtn.grid(row=0, column=1, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        self.Button2 = tk.Button(self.geofence_frame, text="Establecer Geo Fence ", bg="dark green", fg="white",
-                                 command=self.GeoFence)
-        self.Button2.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
+        self.RTLBtn = tk.Button(self.control_frame, text="RTL", bg="dark orange", fg="black",command=self.RTL)
+        self.RTLBtn.grid(row=1, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        self.count_WP = 0
-        self.dron.geofence_markers = []
-        self.markers = []
+        self.ShowDronBtn = tk.Button(self.control_frame, text="Mostrar dron", bg="black", fg="white", command=self.show_dron)
+        self.ShowDronBtn.grid(row=1, column=1, columnspan = 1, padx=5, pady=3, sticky="nesw")
 
+        # === FRAME GESTIÓN DE MISIONES ===
+        self.mision_frame = tk.LabelFrame(self.MapFrame, text="Gestión de misiones")
+        self.mision_frame.grid(row=0, column=3, columnspan=4, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
 
-        # ===== FRAME DE NAVEGACIÓN ======
-        self.nav_frame = tk.LabelFrame(self.MapFrame, text="Navegación")
-        self.nav_frame.grid(row=0, column=3, columnspan=3, padx=5, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+        self.mision_frame.rowconfigure(0, weight=1)
+        self.mision_frame.rowconfigure(1, weight=1)
+        self.mision_frame.columnconfigure(0, weight=1)
+        self.mision_frame.columnconfigure(1, weight=1)
 
-        self.nav_frame.rowconfigure(0, weight=1)
-        self.nav_frame.rowconfigure(1, weight=1)
+        self.CrearMisionBtn = tk.Button(self.mision_frame, text="Crear misión", bg="dark orange", fg="black")
+        self.CrearMisionBtn.grid(row=0, column=0, padx=5, pady=3, sticky="nesw")
 
-        self.nav_frame.columnconfigure(0, weight=1)
-        self.nav_frame.columnconfigure(1, weight=1)
+        self.AreaBtn = tk.Button(self.mision_frame, text="Crear área de observación", bg="dark orange", fg="black")
+        self.AreaBtn.grid(row=0, column=1, padx=5, pady=3, sticky="nesw")
 
-        # tres botones para nuevas funcionalidades
+        self.SelMisionBtn = tk.Button(self.mision_frame, text="Seleccionar misión", bg="dark orange", fg="black")
+        self.SelMisionBtn.grid(row=1, column=0, padx=5, pady=3, sticky="nesw")
 
-        self.Button3 = tk.Button(self.nav_frame, text="Establecer WP", bg="black", fg="white",  command=self.enable_wp_setting)
-        self.Button3.grid(row=0, column=0, padx=5, pady=3, sticky="nesw")
+        self.EjecutarMisionBtn = tk.Button(self.mision_frame, text="Ejecutar misión", bg="black", fg="white")
+        self.EjecutarMisionBtn.grid(row=1, column=1, padx=5, pady=3, sticky="nesw")
 
-        self.Button4 = tk.Button(self.nav_frame, text="GO TO WP", bg="black", fg="white", command=self.start_goto)
-        self.Button4.grid(row=0, column=1, padx=5, pady=3, sticky="nesw")
+        # === FRAME FUNCIONALIDADES ===
+        self.func_frame = tk.LabelFrame(self.MapFrame, text="Funcionalidades")
+        self.func_frame.grid(row=0, column=7, columnspan=4, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
 
-        self.Button5 = tk.Button(self.nav_frame, text="Mostrar trazado", bg="black", fg="white", command=self.set_trace)
-        self.Button5.grid(row=1, column=0, padx=5, pady=3, sticky="nesw")
+        self.func_frame.rowconfigure(0, weight=2)
+        self.func_frame.rowconfigure(1, weight=2)
+        self.func_frame.columnconfigure(0, weight=2)
+        self.func_frame.columnconfigure(1, weight=2)
 
-        # boton para mostrar el icono del dron
-        self.Button9 = tk.Button(self.nav_frame, text="Mostrar dron", bg="black", fg="white", command=self.show_dron)
-        self.Button9.grid(row=1, column=1, padx=5, pady=3, sticky="nesw")
+        self.ActivarCamBtn = tk.Button(self.func_frame, text="Activar cámara", bg="dark orange", fg="black")
+        self.ActivarCamBtn.grid(row=0, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
+
+        self.ObjectRecognBtn = tk.Button(self.func_frame, text="Reconocimiento de Objetos", bg="dark orange", fg="black")
+        self.ObjectRecognBtn.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
+
+        # === FRAME DATOS TELEMETRÍA ===
+        self.tele_frame = tk.LabelFrame(self.MapFrame, text="Datos telemetría")
+        self.tele_frame.grid(row=0, column=12, columnspan=1, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+
+        self.tele_frame.rowconfigure(0, weight=2)
+        self.tele_frame.rowconfigure(1, weight=2)
+        self.tele_frame.columnconfigure(0, weight=2)
+
+        self.AlturaBtn = tk.Button(self.tele_frame, text="Altura", bg="dark orange", fg="black")
+        self.AlturaBtn.grid(row=0, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
+
+        self.TrazadoBtn = tk.Button(self.tele_frame, text="Activar trazado", bg="black", fg="white", command= self.set_trace)
+        self.TrazadoBtn.grid(row=1, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
+
 
         return self.MapFrame
 
 
-    # ====== GEO FENCE ======
-    def activate_geofence_mode(self):
-        self.setting_geofence = True
-        messagebox.showinfo("", "Clic botón derecho para crear los vértices del geo fence.\n Clic 'Establecer Geo Fence' una vez terminado")
-        # le indico qué función debe ejecutar cuado se pulse el botón derecho del ratón
-        self.map_widget.add_right_click_menu_command(label="Add Marker", command=self.add_marker_event,
-                                                     pass_coords=True)
+    # ======== FUNCIONES CONTROL ========
+    def connect(self):
+        # conectamos con el simulador
+        connection_string = 'tcp:127.0.0.1:5763'
+        baud = 115200
+        self.dron.connect(connection_string, baud)
+        # una vez conectado cambio en color de boton
+        self.connectBtn['bg'] = 'green'
+        self.connectBtn['fg'] = 'white'
+        self.connectBtn['text'] = 'Conectado'
 
-    # aquí venimos cuando se clica el botón derecho del ratóm
-    def add_marker_event(self, coords):
-        if self.setting_geofence:
-            # estamos creando un geofence
-            self.vertex_count+=1
-            marker_text = f"Vertex {self.vertex_count}"
-            # añadimos al mapa un marcador en el punto clicado
-            marker = self.map_widget.set_marker(coords[0], coords[1], text=marker_text)
-            # guargamos el marcador para poder borrarlo en su momento
-            self.geofenceElements.append(marker)
-            # añadimos el punto a la lista de puntos de geofence
-            self.geofencePoints.append(
-                {'lat':coords[0], 'lon':coords[1]})
-            # dibujamos una línea entre el último marcador y el penultimo
-            if len(self.geofencePoints) > 1:
-                last_two_points = [self.geofencePoints[-2], self.geofencePoints[-1]]
-                path = self.map_widget.set_path([
-                    (point['lat'], point['lon']) for point in last_two_points])
-                self.geofenceElements.append(path)
-        elif self.reach_WP:
-            # estamos marcando el destino del dron
-            marker = self.map_widget.set_marker(coords[0], coords[1], text="", icon=self.marker_icon,
-                                                icon_anchor="center")
-            self.destination_WP = coords
-            print(f"Navigate to reach WP: {self.destination_WP}")
+    def arm(self):
+        self.dron.arm()
+        # una vez armado cambio en color de boton
+        self.armBtn['bg'] = 'green'
+        self.armBtn['fg'] = 'white'
+        self.armBtn['text'] = 'Armado'
 
-    # aqui venimos cuando tenemos ya definido el geofence y lo queremos enviar al dron
-    def GeoFence(self):
-        # dibujamos el poligono correspondiente al geofence
-        polygon = self.map_widget.set_polygon(
-                [(point['lat'], point['lon']) for point in self.geofencePoints],
-                fill_color=None,
-                outline_color="red",
-                border_width=12,
-                # command=polygon_click,
-                name="GeoFence_polygon"
-        )
-
-        self.dron.setGEOFence (json.dumps(self.geofencePoints))
-
-        self.setting_geofence = False
-        # borramos los marcadores y lineas usados para establecer el geofence
-        for element in self.geofenceElements:
-            self.map_widget.delete(element)
-
-        # activamos el geofence y le decimos que en caso de llegar al límite se quede allí parado
-        parameters = json.dumps([
-            {'ID': "FENCE_ENABLE", 'Value': 1},
-            {'ID': "FENCE_ACTION", 'Value': 4}
-        ])
-        self.dron.setParams(parameters)
-        messagebox.showinfo("Operación correcta", "El geo fence se ha establecido correctamente!")
-
-    # ======== ESTABLECER WP Y REALIZAR GO TO ========
-
-    def enable_wp_setting(self):
-        # activamos o desactivamos la opción de go to
-        self.reach_WP = not self.reach_WP
-        if self.reach_WP:
-            self.Button3.config(text="Desactivar 'establecer WP'")
-            messagebox.showinfo("Establecer WP", "Clic derecho en el mapa para seleccionar el WP de destino.")
-            # indicamos la función a ejecutar cuando se clica el botón derecho del ratón
-            self.map_widget.add_right_click_menu_command(label="Add Marker", command=self.add_marker_event,
-                                                         pass_coords=True)
-
-        if not self.reach_WP:
-            self.Button3.config(text="Establecer WP")
-            self.remove_right_click_menu_command(label="Add Marker")
-
-    def remove_right_click_menu_command(self, label):
-        # desactivamos el boton derecho del ratón
-        self.map_widget.right_click_menu_commands = [cmd for cmd in self.map_widget.right_click_menu_commands if
-                                                     cmd['label'] != label]
-
-    # aquí iremos cuando queramos dirigir el dron al punto marcado
-    def start_goto(self):
-        if self.destination_WP:
-            # mantenemos la altitud que tiene el dron
-            alt = self.dron.alt
+    def RTL(self):
+        if self.dron.going:
             self.dron.stopGo()
-            self.dron.goto(float(self.destination_WP[0]), float(self.destination_WP[1]), alt, blocking=False)
+        # llamo en modo no bloqueante y le indico qué función debe activar al acabar la operación, y qué parámetro debe usar
+        self.dron.RTL(blocking=False, callback=self.informar, params='EN CASA')
+        # mientras retorno pongo el boton en amarillo
+        self.RTLBtn['bg'] = 'yellow'
+        self.RTLBtn['text'] = 'Retornando....'
 
-    # ======= ESTABLECER ICONO DRON (MARKER) =======
     def show_dron(self):
         # muestro el dron o dejo de mostrarlo
         self.marker = not self.marker
@@ -225,6 +187,7 @@ class MapFrameClass:
             if not self.dron.sendTelemetryInfo:
                 # indico qué función quiero que se ejecute cada vez que llega un nuevo paquete de datos de telemetría
                 self.dron.send_telemetry_info(self.process_telemetry_info)
+            self.informar('DRON_VISIBLE')
         else:
             # Si hay que quitarlo, lo hago aquí
             if self.drone_marker:
@@ -232,6 +195,49 @@ class MapFrameClass:
                 self.drone_marker = None
             if not self.trace:
                 self.dron.stop_sending_telemetry_info()
+            self.informar('DRON_OCULTO')
+
+    def informar(self, mensaje):
+        if mensaje == "EN CASA":
+            # pongo el boton RTL en verde
+            self.RTLBtn['bg'] = 'green'
+            self.RTLBtn['fg'] = 'white'
+
+            # me desconecto del dron (eso tardará 5 segundos)
+            self.dron.disconnect()
+            # devuelvo los botones a la situación inicial
+
+            self.connectBtn['bg'] = 'dark orange'
+            self.connectBtn['fg'] = 'black'
+            self.connectBtn['text'] = 'Conectar'
+
+            self.armBtn['bg'] = 'dark orange'
+            self.armBtn['fg'] = 'black'
+            self.armBtn['text'] = 'Armar'
+
+            self.RTLBtn['bg'] = 'dark orange'
+            self.RTLBtn['fg'] = 'black'
+            self.RTLBtn['text'] = 'RTL'
+
+        if mensaje == "TRAZADO_ON":
+            self.TrazadoBtn['bg'] = 'green'
+            self.TrazadoBtn['fg'] = 'white'
+            self.TrazadoBtn['text'] = 'Ocultar trazado'
+
+        if mensaje == "TRAZADO_OFF":
+            self.TrazadoBtn['bg'] = 'black'
+            self.TrazadoBtn['fg'] = 'white'
+            self.TrazadoBtn['text'] = 'Mostrar trazado'
+
+        if mensaje == "DRON_VISIBLE":
+            self.ShowDronBtn['bg'] = 'green'
+            self.ShowDronBtn['fg'] = 'white'
+            self.ShowDronBtn['text'] = 'Ocultar dron'
+
+        if mensaje == "DRON_OCULTO":
+            self.ShowDronBtn['bg'] = 'black'
+            self.ShowDronBtn['fg'] = 'white'
+            self.ShowDronBtn['text'] = 'Mostrar dron'
 
     # vendremos aquí cada vez que se reciba un paquete de datos de telemetría
     def process_telemetry_info(self, telemetry_info):
@@ -263,8 +269,33 @@ class MapFrameClass:
         if self.trace:
             if not self.dron.sendTelemetryInfo:
                 self.dron.send_telemetry_info(self.process_telemetry_info)
+                self.informar("TRAZADO_ON")
         else:
             self.map_widget.delete_all_path()
             self.last_position = []
             if not self.marker:
                 self.dron.stop_sending_telemetry_info()
+                self.informar("TRAZADO_OFF")
+
+    # ====== GEOFENCE =======
+    # aqui venimos cuando tenemos ya definido el geofence y lo queremos enviar al dron
+    def GeoFence(self):
+        # dibujamos el poligono correspondiente al geofence
+        polygon = self.map_widget.set_polygon(
+            [(point['lat'], point['lon']) for point in self.geofencePoints],
+            fill_color=None,
+            outline_color="red",
+            border_width=5,
+            # command=polygon_click,
+            name="GeoFence_polygon"
+        )
+
+        self.dron.setGEOFence(json.dumps(self.geofencePoints))
+
+        # activamos el geofence y le decimos que en caso de llegar al límite se quede allí parado
+        parameters = json.dumps([
+            {'ID': "FENCE_ENABLE", 'Value': 1},
+            {'ID': "FENCE_ACTION", 'Value': 4}
+        ])
+        self.dron.setParams(parameters)
+        messagebox.showinfo("Operación correcta", "El geo fence se ha establecido correctamente!")
