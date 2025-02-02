@@ -6,6 +6,8 @@ from tkinter import messagebox
 from tkinter import ttk
 from pymavlink import mavutil
 from PIL import Image, ImageTk
+from CamaraVideo import *
+from ObjectRecognition import *
 
 class MapFrameClass:
 
@@ -124,10 +126,10 @@ class MapFrameClass:
         self.func_frame.columnconfigure(0, weight=2)
         self.func_frame.columnconfigure(1, weight=2)
 
-        self.ActivarCamBtn = tk.Button(self.func_frame, text="Activar cámara", bg="dark orange", fg="black")
+        self.ActivarCamBtn = tk.Button(self.func_frame, text="Activar cámara", bg="dark orange", fg="black", command=self.activar_camara)
         self.ActivarCamBtn.grid(row=0, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
 
-        self.ObjectRecognBtn = tk.Button(self.func_frame, text="Reconocimiento de Objetos", bg="dark orange", fg="black")
+        self.ObjectRecognBtn = tk.Button(self.func_frame, text="Reconocimiento de Objetos", bg="dark orange", fg="black", command=self.activar_ObjRecognition)
         self.ObjectRecognBtn.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
 
         # === FRAME DATOS TELEMETRÍA ===
@@ -313,3 +315,11 @@ class MapFrameClass:
         ])
         #self.dron.setParams(parameters)
         #messagebox.showinfo("Operación correcta", "El geo fence se ha establecido correctamente!")
+
+    def activar_camara(self):
+        show_camera_video(self.MapFrame)
+
+    def activar_ObjRecognition(self):
+        show_camera_recognition(self.MapFrame)
+
+
