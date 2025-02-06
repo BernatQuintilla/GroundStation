@@ -148,9 +148,7 @@ class MapFrameClass:
         self.TrazadoBtn = tk.Button(self.tele_frame, text="Activar trazado", bg="black", fg="white", command= self.set_trace)
         self.TrazadoBtn.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
 
-
         return self.MapFrame
-
 
     # ======== FUNCIONES CONTROL ========
     def connect(self):
@@ -310,8 +308,6 @@ class MapFrameClass:
         )
 
         self.dron.setScenario(scenario_data)
-
-        messagebox.showinfo("Operación correcta", "El geo fence se ha establecido correctamente!")
 
     def activar_camara(self):
         show_camera_video(self.MapFrame)
