@@ -8,6 +8,7 @@ from pymavlink import mavutil
 from PIL import Image, ImageTk
 from CamaraVideo import *
 from ObjectRecognition import *
+import json
 
 class MapFrameClass:
 
@@ -15,17 +16,11 @@ class MapFrameClass:
         # guardamos el objeto de la clase dron con el que estamos controlando el dron
         self.dron = dron
         self.altura = 0
+        self.altura_vuelo = 5
 
         # atributos necesarios para crear el geofence
         self.vertex_count = 4
-        self.geofencePoints = [
-            {'lat': lat, 'lon': lon} for lat, lon in [
-                (41.2764214, 1.9882317),
-                (41.2761916, 1.9883283),
-                (41.2763750, 1.9891195),
-                (41.2766119, 1.9890162)
-            ]
-        ]
+
         # atributos para establecer el trazado del dron
         self.trace = False
         self.last_position = None  # actualizar trazado
@@ -72,9 +67,6 @@ class MapFrameClass:
         self.MapFrame.columnconfigure(8, weight=1)
         self.MapFrame.columnconfigure(9, weight=1)
 
-        # === GEOFENCE ===
-        self.GeoFence()
-
         # === FRAME CONTROL ===
         self.control_frame = tk.LabelFrame(self.MapFrame, text="Control")
         self.control_frame.grid(row=0, column=0, columnspan=3, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
@@ -87,14 +79,18 @@ class MapFrameClass:
         self.connectBtn = tk.Button(self.control_frame, text="Conectar", bg="dark orange", fg="black",command=self.connect)
         self.connectBtn.grid(row=0, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        self.armBtn = tk.Button(self.control_frame, text="Armar", bg="dark orange", fg="black",command=self.arm)
-        self.armBtn.grid(row=0, column=1, columnspan=1, padx=5, pady=3, sticky="nesw")
+        self.despegarBtn = tk.Button(self.control_frame, text="Despegar", bg="dark orange", fg="black",command=self.arm_and_takeOff)
+        self.despegarBtn.grid(row=0, column=1, columnspan=1, padx=5, pady=3, sticky="nesw")
+
+        self.altura_input = tk.Entry(self.control_frame, width=3)
+        self.altura_input.grid(row=0, column=2,columnspan=1, padx=1, pady=3)
+        self.altura_input.insert(0, str(self.altura_vuelo))
 
         self.RTLBtn = tk.Button(self.control_frame, text="RTL", bg="dark orange", fg="black",command=self.RTL)
         self.RTLBtn.grid(row=1, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
 
         self.ShowDronBtn = tk.Button(self.control_frame, text="Mostrar dron", bg="black", fg="white", command=self.show_dron)
-        self.ShowDronBtn.grid(row=1, column=1, columnspan = 1, padx=5, pady=3, sticky="nesw")
+        self.ShowDronBtn.grid(row=1, column=1, columnspan = 2, padx=5, pady=3, sticky="nesw")
 
         # === FRAME GESTIÓN DE MISIONES ===
         self.mision_frame = tk.LabelFrame(self.MapFrame, text="Gestión de misiones")
@@ -166,13 +162,16 @@ class MapFrameClass:
         self.connectBtn['bg'] = 'green'
         self.connectBtn['fg'] = 'white'
         self.connectBtn['text'] = 'Conectado'
+        self.GeoFence()
 
-    def arm(self):
+    def arm_and_takeOff(self):
+        self.altura_vuelo = int(self.altura_input.get())
         self.dron.arm()
+        self.dron.takeOff(self.altura_vuelo)
         # una vez armado cambio en color de boton
-        self.armBtn['bg'] = 'green'
-        self.armBtn['fg'] = 'white'
-        self.armBtn['text'] = 'Armado'
+        self.despegarBtn['bg'] = 'green'
+        self.despegarBtn['fg'] = 'white'
+        self.despegarBtn['text'] = 'Volando'
 
     def RTL(self):
         if self.dron.going:
@@ -221,9 +220,9 @@ class MapFrameClass:
             self.connectBtn['fg'] = 'black'
             self.connectBtn['text'] = 'Conectar'
 
-            self.armBtn['bg'] = 'dark orange'
-            self.armBtn['fg'] = 'black'
-            self.armBtn['text'] = 'Armar'
+            self.despegarBtn['bg'] = 'dark orange'
+            self.despegarBtn['fg'] = 'black'
+            self.despegarBtn['text'] = 'Armar'
 
             self.RTLBtn['bg'] = 'dark orange'
             self.RTLBtn['fg'] = 'black'
@@ -296,25 +295,23 @@ class MapFrameClass:
     # ====== GEOFENCE =======
     # aqui venimos cuando tenemos ya definido el geofence y lo queremos enviar al dron
     def GeoFence(self):
-        # dibujamos el poligono correspondiente al geofence
+
+        with open("GeoFenceScenario.json", "r") as file:
+            scenario_data = json.load(file)
+
+        geofence_waypoints = scenario_data[0]["waypoints"]
+
         polygon = self.map_widget.set_polygon(
-            [(point['lat'], point['lon']) for point in self.geofencePoints],
+            [(point['lat'], point['lon']) for point in geofence_waypoints],
             fill_color=None,
             outline_color="red",
             border_width=5,
-            # command=polygon_click,
             name="GeoFence_polygon"
         )
 
-        #self.dron.setGEOFence(json.dumps(self.geofencePoints))
+        self.dron.setScenario(scenario_data)
 
-        # activamos el geofence y le decimos que en caso de llegar al límite se quede allí parado
-        parameters = json.dumps([
-            {'ID': "FENCE_ENABLE", 'Value': 1},
-            {'ID': "FENCE_ACTION", 'Value': 4}
-        ])
-        #self.dron.setParams(parameters)
-        #messagebox.showinfo("Operación correcta", "El geo fence se ha establecido correctamente!")
+        messagebox.showinfo("Operación correcta", "El geo fence se ha establecido correctamente!")
 
     def activar_camara(self):
         show_camera_video(self.MapFrame)
