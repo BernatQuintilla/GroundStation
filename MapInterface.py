@@ -8,6 +8,7 @@ from pymavlink import mavutil
 from PIL import Image, ImageTk
 from CamaraVideo import *
 from ObjectRecognition import *
+from CreadorMisiones import *
 import json
 
 class MapFrameClass:
@@ -101,7 +102,7 @@ class MapFrameClass:
         self.mision_frame.columnconfigure(0, weight=1)
         self.mision_frame.columnconfigure(1, weight=1)
 
-        self.CrearMisionBtn = tk.Button(self.mision_frame, text="Crear misión", bg="dark orange", fg="black")
+        self.CrearMisionBtn = tk.Button(self.mision_frame, text="Crear misión", bg="dark orange", fg="black", command = self.show_mission_map)
         self.CrearMisionBtn.grid(row=0, column=0, padx=5, pady=3, sticky="nesw")
 
         self.AreaBtn = tk.Button(self.mision_frame, text="Crear área de observación", bg="dark orange", fg="black")
@@ -308,6 +309,16 @@ class MapFrameClass:
         )
 
         self.dron.setScenario(scenario_data)
+
+    # ====== CREADOR MISIONES ======
+    def show_mission_map(self):
+        map_window = tk.Toplevel()
+        map_window.title("Creador de Misiones")
+        map_window.geometry("820x620")
+
+        map_mission_class = MapMission(self.dron)
+        map_frame = map_mission_class.buildFrame(map_window)
+        map_frame.pack(fill="both", expand=True)
 
     def activar_camara(self):
         show_camera_video(self.MapFrame)
