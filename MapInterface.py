@@ -316,7 +316,7 @@ class MapFrameClass:
         map_window.title("Creador de Misiones")
         map_window.geometry("820x620")
 
-        map_mission_class = MapMission(self.dron)
+        map_mission_class = MapMission(self.dron, self.altura_vuelo)
         map_frame = map_mission_class.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
 

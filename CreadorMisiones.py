@@ -12,11 +12,12 @@ import json
 
 class MapMission:
 
-    def __init__(self, dron):
+    def __init__(self, dron, altura_vuelo):
         # guardamos el objeto de la clase dron con el que estamos controlando el dron
         self.dron = dron
         self.altura = 0
-        self.altura_vuelo = 5
+        self.altura_vuelo = altura_vuelo
+        self.geofence_waypoints = []
 
         # atributos necesarios para crear el geofence
         self.vertex_count = 4
@@ -88,23 +89,51 @@ class MapMission:
         with open("GeoFenceScenario.json", "r") as file:
             scenario_data = json.load(file)
 
-        geofence_waypoints = scenario_data[0]["waypoints"]
+        self.geofence_waypoints = scenario_data[0]["waypoints"]
 
         polygon = self.map_widget.set_polygon(
-            [(point['lat'], point['lon']) for point in geofence_waypoints],
+            [(point['lat'], point['lon']) for point in self.geofence_waypoints],
             fill_color=None,
             outline_color="red",
             border_width=4,
             name="GeoFence_polygon"
         )
+    # Usamos para comprobar si wp dentro de geofence
+    def dentro_de_geofence(self, lat, lon):
+        geofence_polygon = [(point['lat'], point['lon']) for point in self.geofence_waypoints]
+
+        inside = False
+        x, y = lat, lon
+        n = len(geofence_polygon)
+        p1x, p1y = geofence_polygon[0]
+
+        for i in range(n + 1):
+            p2x, p2y = geofence_polygon[i % n]
+            if y > min(p1y, p2y):
+                if y <= max(p1y, p2y):
+                    if x <= max(p1x, p2x):
+                        if p1y != p2y:
+                            xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                        else:
+                            xinters = p1x
+                        if p1x == p2x or x <= xinters:
+                            inside = not inside
+
+            p1x, p1y = p2x, p2y
+
+        return inside
 
     # ===== FUNCIONES MISIÓN ======
     def add_marker_event(self, coords):
+
+        if not self.dentro_de_geofence(coords[0], coords[1]):
+            messagebox.showwarning("Coordenadas fuera del Geofence","Selecciona coordenadas dentro del Geofence.")
+            return
+
         location_point_img = Image.open("assets/WaypointMarker.png")
         resized_location_point = location_point_img.resize((25, 25), Image.LANCZOS)
         location_point_icon = ImageTk.PhotoImage(resized_location_point)
 
-        # Añadimos el marker
         marker = self.map_widget.set_marker(coords[0], coords[1],
                                             text=f"WP {len(self.waypoints) + 1}",
                                             icon=location_point_icon,
@@ -112,7 +141,6 @@ class MapMission:
 
         self.waypoints.append({'lat': coords[0], 'lon': coords[1], 'marker': marker})
 
-        # Si ya existe otro waypoint dibujamos una línea
         if len(self.waypoints) > 1:
             last_wp = self.waypoints[-2]
             current_wp = self.waypoints[-1]
