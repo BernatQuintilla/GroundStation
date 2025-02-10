@@ -304,7 +304,7 @@ class MapFrameClass:
             [(point['lat'], point['lon']) for point in geofence_waypoints],
             fill_color=None,
             outline_color="red",
-            border_width=5,
+            border_width=4,
             name="GeoFence_polygon"
         )
 
@@ -320,10 +320,15 @@ class MapFrameClass:
         map_frame = map_mission_class.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
 
+    # ====== FUNCIONALIDADES ======
     def activar_camara(self):
         show_camera_video(self.MapFrame)
 
     def activar_ObjRecognition(self):
         show_camera_recognition(self.MapFrame)
+
+
+
+
 
 
