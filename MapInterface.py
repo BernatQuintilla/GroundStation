@@ -12,6 +12,9 @@ from ObjectRecognition import *
 from CreadorMisiones import *
 import json
 
+from dronLink.modules.dron_telemetry import send_telemetry_info
+
+
 class MapFrameClass:
 
     def __init__(self, dron):
@@ -216,7 +219,7 @@ class MapFrameClass:
 
     # ===== INFORMAR ======
     def informar(self, mensaje):
-        if mensaje == "EN CASA":
+        if mensaje == "EN CASA" or mensaje == "FIN MISION":
             # pongo el boton RTL en verde
             self.RTLBtn['bg'] = 'green'
             self.RTLBtn['fg'] = 'white'
@@ -231,7 +234,7 @@ class MapFrameClass:
 
             self.despegarBtn['bg'] = 'dark orange'
             self.despegarBtn['fg'] = 'black'
-            self.despegarBtn['text'] = 'Armar'
+            self.despegarBtn['text'] = 'Volar'
 
             self.RTLBtn['bg'] = 'dark orange'
             self.RTLBtn['fg'] = 'black'
@@ -355,17 +358,19 @@ class MapFrameClass:
 
     def execute_mission(self):
         mission = self.load_mission()
-
         if mission is None:
             return
-
-        self.dron.uploadMission(mission, blocking=True)
+        self.dron.uploadMission(mission, blocking=False)
 
         messagebox.showinfo("Inicio Misión", '¡Comienza la misión!')
 
-        self.dron.executeMission(blocking=True)
+        if not self.dron.sendTelemetryInfo:
+            self.dron.send_telemetry_info(self.process_telemetry_info)
 
-        messagebox.showinfo("Misión Cumplida", '¡Misión cumplida!')
+        self.dron.executeMission(blocking=False)
+        if self.altura <= 0.01: # No funciona
+            messagebox.showinfo("Misión Cumplida", '¡Misión cumplida!')
+            self.informar("FIN MISION")
 
     def select_mission(self):
         return
