@@ -4,6 +4,7 @@ import tkintermapview
 from tkinter import Canvas
 from tkinter import messagebox
 from tkinter import ttk
+from tkinter import StringVar
 from pymavlink import mavutil
 from PIL import Image, ImageTk
 from CamaraVideo import *
@@ -36,6 +37,11 @@ class MapFrameClass:
         self.marker_photo = Image.open("assets/marker_icon.png")
         self.resized_marker_icon = self.marker_photo.resize((20, 20), Image.LANCZOS)
         self.marker_icon = ImageTk.PhotoImage(self.resized_marker_icon)
+
+        # Nombre misión
+        self.nombre_mision = "mission"
+        self.mission_names = []
+        self.mission_var = tk.StringVar()
 
     def buildFrame(self, fatherFrame):
 
@@ -108,10 +114,14 @@ class MapFrameClass:
         self.AreaBtn = tk.Button(self.mision_frame, text="Crear área de observación", bg="dark orange", fg="black")
         self.AreaBtn.grid(row=0, column=1, padx=5, pady=3, sticky="nesw")
 
-        self.SelMisionBtn = tk.Button(self.mision_frame, text="Seleccionar misión", bg="dark orange", fg="black")
+        self.SelMisionBtn = tk.Button(self.mision_frame, text="Seleccionar misión", bg="dark orange", fg="black", command=self.select_mission)
         self.SelMisionBtn.grid(row=1, column=0, padx=5, pady=3, sticky="nesw")
 
-        self.EjecutarMisionBtn = tk.Button(self.mision_frame, text="Ejecutar misión", bg="black", fg="white")
+        #self.mission_dropdown = ttk.Combobox(self.mision_frame, textvariable=self.mission_var, state="readonly")
+        #self.mission_dropdown.grid(row=1, column=0, padx=5, pady=3, sticky="nesw")
+        #self.update_mission_list()
+
+        self.EjecutarMisionBtn = tk.Button(self.mision_frame, text="Ejecutar misión", bg="black", fg="white", command = self.execute_mission)
         self.EjecutarMisionBtn.grid(row=1, column=1, padx=5, pady=3, sticky="nesw")
 
         # === FRAME FUNCIONALIDADES ===
@@ -319,6 +329,46 @@ class MapFrameClass:
         map_mission_class = MapMission(self.dron, self.altura_vuelo)
         map_frame = map_mission_class.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
+
+    def load_mission(self):
+        try:
+            mission_path = os.path.join("missions", f"{self.nombre_mision}.json")
+
+            with open(mission_path, "r") as mission_file:
+                mission = json.load(mission_file)
+
+            if "takeOffAlt" not in mission or "waypoints" not in mission:
+                messagebox.showerror("Misión Inválida", "El archivo de misión es inválido.")
+                return None
+
+            messagebox.showinfo("Misión Cargada", f'¡La misión "{self.nombre_mision}" se ha cargado correctamente!')
+            return mission
+
+        except FileNotFoundError:
+            messagebox.showerror("Archivo No Encontrado",f'No se encontró la misión "{self.nombre_mision}.json" en la carpeta "missions".')
+        except json.JSONDecodeError:
+            messagebox.showerror("Error de JSON", "Hubo un error al leer el archivo de misión.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un error al cargar la misión: {str(e)}")
+
+        return None
+
+    def execute_mission(self):
+        mission = self.load_mission()
+
+        if mission is None:
+            return
+
+        self.dron.uploadMission(mission, blocking=True)
+
+        messagebox.showinfo("Inicio Misión", '¡Comienza la misión!')
+
+        self.dron.executeMission(blocking=True)
+
+        messagebox.showinfo("Misión Cumplida", '¡Misión cumplida!')
+
+    def select_mission(self):
+        return
 
     # ====== FUNCIONALIDADES ======
     def activar_camara(self):

@@ -1,5 +1,6 @@
 import json
 import tkinter as tk
+import os
 import tkintermapview
 from tkinter import Canvas
 from tkinter import messagebox
@@ -74,11 +75,20 @@ class MapMission:
 
         self.frame.rowconfigure(0, weight=2)
         self.frame.rowconfigure(1, weight=2)
-        self.frame.columnconfigure(0, weight=2)
-        self.frame.columnconfigure(1, weight=2)
+        self.frame.columnconfigure(0, weight=1)
+        self.frame.columnconfigure(1, weight=1)
+        self.frame.columnconfigure(2, weight=2)
 
-        self.ejecutarBtn = tk.Button(self.frame, text="Ejecutar Misión", bg="dark orange", fg="black", command=self.execute_mission)
-        self.ejecutarBtn.grid(row=0, column=0, columnspan = 5, padx=5, pady=3, sticky="nesw")
+        self.mission_name_label = tk.Label(self.frame, text="Nombre de la misión:")
+        self.mission_name_label.grid(row=0, column=0, padx=5, pady=3, sticky="w")
+
+        self.mission_name_entry = tk.Entry(self.frame)
+        self.mission_name_entry.grid(row=0, column=1, padx=5, pady=3, sticky="ew")
+
+        # Botón para guardar misión
+        self.save_mission_btn = tk.Button(self.frame, text="Guardar Misión", bg="dark orange", fg="black",
+                                          command=self.save_mission)
+        self.save_mission_btn.grid(row=0, column=2, padx=5, pady=3, sticky="nesw")
 
         return self.MapMission
 
@@ -151,22 +161,31 @@ class MapMission:
                 width=2
             )
 
-    def execute_mission(self):
+    def save_mission(self):
+        mission_name = self.mission_name_entry.get().strip()
+
+        if not mission_name:
+            mission_name = "mission"
+
         if not self.waypoints:
-            messagebox.showerror("No hay Waypoints", "Porfavor, añade waypoints antes de ejecutar la misión")
+            messagebox.showerror("No hay Waypoints", "Por favor, añade waypoints antes de guardar la misión.")
             return
 
-        # Formato misión (JSON)
+        mission_folder = "missions"
+        if not os.path.exists(mission_folder):
+            os.makedirs(mission_folder)
+
+        mission_path = os.path.join(mission_folder, f"{mission_name}.json")
+
         mission = {
             "takeOffAlt": self.altura_vuelo,
             "waypoints": [{"lat": wp["lat"], "lon": wp["lon"], "alt": self.altura_vuelo} for wp in self.waypoints]
         }
 
-        self.dron.uploadMission(mission, blocking=True)
+        with open(mission_path, "w") as mission_file:
+            json.dump(mission, mission_file, indent=4)
 
-        messagebox.showinfo("Inicio Misión", '¡Comienza la misión!')
+        messagebox.showinfo("Misión Guardada",f'¡La misión se ha guardado como "{mission_name}.json" en la carpeta "Missions"!')
 
-        self.dron.executeMission(blocking=True)
 
-        messagebox.showinfo("Misión Cumplida", '¡Misión cumplida!')
 
