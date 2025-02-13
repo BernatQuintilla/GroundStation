@@ -259,12 +259,17 @@ def _executeMission (self, callback=None, params = None):
         0, 0, 0, 0, 0, 0, 0, 0)
 
     self.state = 'flying'
-    # esperamos a que acabe la mision
-    time.sleep(10)
+
+    '''time.sleep(10)
     msg = self.message_handler.wait_for_message(
         'GLOBAL_POSITION_INT',
         condition=self._checkOnHearth,
-    )
+    )'''
+    self.vehicle.motors_disarmed_wait()
+    print("Misión Cumplida")
+
+
+
     '''while True:
         msg = self.vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout = 3)
         if msg:
@@ -273,6 +278,8 @@ def _executeMission (self, callback=None, params = None):
             if alt < 0.5:
                 break
         time.sleep(0.1)'''
+
+
     self.state = 'connected'
     if callback != None:
         if self.id == None:

@@ -22,7 +22,7 @@ class MapFrameClass:
         self.dron = dron
         self.altura = 0
         self.altura_vuelo = 5
-
+        self.dron.navSpeed = 0.001
         # atributos necesarios para crear el geofence
         self.vertex_count = 4
 
@@ -234,7 +234,7 @@ class MapFrameClass:
 
             self.despegarBtn['bg'] = 'dark orange'
             self.despegarBtn['fg'] = 'black'
-            self.despegarBtn['text'] = 'Volar'
+            self.despegarBtn['text'] = 'Despegar'
 
             self.RTLBtn['bg'] = 'dark orange'
             self.RTLBtn['fg'] = 'black'
@@ -323,6 +323,12 @@ class MapFrameClass:
 
         self.dron.setScenario(scenario_data)
 
+        parameters = [
+            {'ID': "FENCE_ENABLE", 'Value': 1},
+            {'ID': "FENCE_ACTION", 'Value': 4}
+        ]
+        self.dron.setParams(parameters)
+
     # ====== CREADOR MISIONES ======
     def show_mission_map(self):
         map_window = tk.Toplevel()
@@ -360,6 +366,8 @@ class MapFrameClass:
         mission = self.load_mission()
         if mission is None:
             return
+        mission['speed'] = 1 # Cambio velocidad a 1
+
         self.dron.uploadMission(mission, blocking=False)
 
         messagebox.showinfo("Inicio Misión", '¡Comienza la misión!')
@@ -368,9 +376,8 @@ class MapFrameClass:
             self.dron.send_telemetry_info(self.process_telemetry_info)
 
         self.dron.executeMission(blocking=False)
-        if self.altura <= 0.01: # No funciona
-            messagebox.showinfo("Misión Cumplida", '¡Misión cumplida!')
-            self.informar("FIN MISION")
+        #messagebox.showinfo("Misión Cumplida", '¡Misión cumplida!')
+
 
     def select_mission(self):
         return
