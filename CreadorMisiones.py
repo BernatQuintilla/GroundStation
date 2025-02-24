@@ -185,7 +185,8 @@ class MapMission:
         with open(mission_path, "w") as mission_file:
             json.dump(mission, mission_file, indent=4)
 
-        messagebox.showinfo("Misión Guardada",f'¡La misión se ha guardado como "{mission_name}.json" en la carpeta "Missions"!')
+        self.MapMission.master.destroy()
+        messagebox.showinfo("Misión Guardada",f'¡La misión se ha guardado como "{mission_name}.json" en la carpeta "missions"!')
 
 
 

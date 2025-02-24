@@ -1,4 +1,5 @@
 import json
+import time
 import tkinter as tk
 import tkintermapview
 from tkinter import Canvas
@@ -6,11 +7,12 @@ from tkinter import messagebox
 from tkinter import ttk
 from tkinter import StringVar
 from pymavlink import mavutil
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageGrab
 from CamaraVideo import *
 from ObjectRecognition import *
 from CreadorMisiones import *
 import json
+import io
 
 from dronLink.modules.dron_telemetry import send_telemetry_info
 
@@ -29,6 +31,21 @@ class MapFrameClass:
         # atributos para establecer el trazado del dron
         self.trace = False
         self.last_position = None  # actualizar trazado
+
+
+        # Cargamos los tres iconos
+        self.RTL_active = False
+        self.icon_red = Image.open("assets/RedArrow.png")
+        self.resized_icon_red = self.icon_red.resize((30, 30), Image.LANCZOS)
+        self.photo_red = ImageTk.PhotoImage(self.resized_icon_red)
+
+        self.icon_yellow = Image.open("assets/YellowArrow.png")
+        self.resized_icon_yellow = self.icon_yellow.resize((30, 30), Image.LANCZOS)
+        self.photo_yellow = ImageTk.PhotoImage(self.resized_icon_yellow)
+
+        self.icon_green = Image.open("assets/GreenArrow.png")
+        self.resized_icon_green = self.icon_green.resize((30, 30), Image.LANCZOS)
+        self.photo_green = ImageTk.PhotoImage(self.resized_icon_green)
 
         # Iconos del dron y markers
         self.drone_marker = None
@@ -177,45 +194,25 @@ class MapFrameClass:
         self.GeoFence()
 
     def arm_and_takeOff(self):
+        self.RTL_active = True
+        self.informar('DESPEGANDO') # Intento poner amarillo pero no funciona
+
         self.altura_vuelo = int(self.altura_input.get())
         self.dron.arm()
         self.dron.takeOff(self.altura_vuelo)
         # una vez armado cambio en color de boton
-        self.despegarBtn['bg'] = 'green'
-        self.despegarBtn['fg'] = 'white'
-        self.despegarBtn['text'] = 'Volando'
+        self.informar('VOLANDO')
 
     def RTL(self):
         if self.dron.going:
             self.dron.stopGo()
+        self.RTL_active = True
+
         # llamo en modo no bloqueante y le indico qué función debe activar al acabar la operación, y qué parámetro debe usar
         self.dron.RTL(blocking=False, callback=self.informar, params='EN CASA')
         # mientras retorno pongo el boton en amarillo
         self.RTLBtn['bg'] = 'yellow'
         self.RTLBtn['text'] = 'Retornando....'
-
-    def show_dron(self):
-        # muestro el dron o dejo de mostrarlo
-        self.marker = not self.marker
-        if self.marker:
-            # si hay que mostrarlo aquí añado el icono del dron
-            self.drone_marker = self.map_widget.set_marker(self.initial_lat, self.initial_lon,
-                                                           marker_color_outside="blue", marker_color_circle="black",
-                                                           text="", text_color="blue",
-                                                           icon=self.photo, icon_anchor="center")
-            # pido que me envíen datos de telemetría que me permitirán saber dónde está el dron para resituarlo en el mapa
-            if not self.dron.sendTelemetryInfo:
-                # indico qué función quiero que se ejecute cada vez que llega un nuevo paquete de datos de telemetría
-                self.dron.send_telemetry_info(self.process_telemetry_info)
-            self.informar('DRON_VISIBLE')
-        else:
-            # Si hay que quitarlo, lo hago aquí
-            if self.drone_marker:
-                self.map_widget.delete(self.drone_marker)
-                self.drone_marker = None
-            if not self.trace:
-                self.dron.stop_sending_telemetry_info()
-            self.informar('DRON_OCULTO')
 
     # ===== INFORMAR ======
     def informar(self, mensaje):
@@ -223,7 +220,8 @@ class MapFrameClass:
             # pongo el boton RTL en verde
             self.RTLBtn['bg'] = 'green'
             self.RTLBtn['fg'] = 'white'
-
+            self.RTL_active = False
+            self.dron.send_telemetry_info(self.process_telemetry_info)
             # me desconecto del dron (eso tardará 5 segundos)
             self.dron.disconnect()
             # devuelvo los botones a la situación inicial
@@ -239,6 +237,16 @@ class MapFrameClass:
             self.RTLBtn['bg'] = 'dark orange'
             self.RTLBtn['fg'] = 'black'
             self.RTLBtn['text'] = 'RTL'
+        if mensaje == "DESPEGANDO":
+            self.RTL_active = True
+            self.despegarBtn['bg'] = 'yellow'
+            self.despegarBtn['fg'] = 'black'
+            self.despegarBtn['text'] = 'Despegando...'
+        if mensaje == "VOLANDO":
+            self.RTL_active = False
+            self.despegarBtn['bg'] = 'green'
+            self.despegarBtn['fg'] = 'white'
+            self.despegarBtn['text'] = 'Volando'
 
         if mensaje == "TRAZADO_ON":
             self.TrazadoBtn['bg'] = 'green'
@@ -260,36 +268,81 @@ class MapFrameClass:
             self.ShowDronBtn['fg'] = 'white'
             self.ShowDronBtn['text'] = 'Mostrar dron'
 
+    # ======= MOSTRAR ICONO DEL DRON =======
+    def show_dron(self):
+        # Muestro el dron o dejo de mostrarlo
+        self.marker = not self.marker
+        if self.marker:
+            self.update_drone_marker(self.initial_lat, self.initial_lon)
+            if not self.dron.sendTelemetryInfo:
+                self.dron.send_telemetry_info(self.process_telemetry_info)
+            self.informar('DRON_VISIBLE')
+        else:
+            # Si hay que quitarlo, lo hago aquí
+            if self.drone_marker:
+                self.map_widget.delete(self.drone_marker)
+                self.map_widget.delete_all_marker()
+            # if not self.trace:
+                #self.dron.stop_sending_telemetry_info()
+            self.informar('DRON_OCULTO')
+
+    def rotate_icon(self, icon, angle):
+        if icon == self.photo_red:
+            pil_image = self.resized_icon_red
+        elif icon == self.photo_yellow:
+            pil_image = self.resized_icon_yellow
+        elif icon == self.photo_green:
+            pil_image = self.resized_icon_green
+        else:
+            pil_image = self.resized_icon
+        rotated_image = pil_image.rotate(-angle, resample=Image.BICUBIC, expand=True)
+        rotated_icon = ImageTk.PhotoImage(rotated_image)
+        return rotated_icon
+
+    def update_drone_marker(self, lat, lon):
+        if self.RTL_active:
+            icon_to_use = self.photo_yellow
+        elif self.altura <= 0.03:
+            icon_to_use = self.photo_red
+        else:
+            icon_to_use = self.photo_green
+
+        heading = self.dron.heading
+        rotated_icon = self.rotate_icon(icon_to_use, heading)
+
+        if self.drone_marker:
+            self.map_widget.delete(self.drone_marker)
+            self.map_widget.delete_all_marker()
+
+        self.drone_marker = self.map_widget.set_marker(
+            lat, lon,
+            marker_color_outside="blue",
+            marker_color_circle="black",
+            text="",
+            text_color="blue",
+            icon=rotated_icon,
+            icon_anchor="center"
+        )
+
     # ===== DATOS DE TELEMETRÍA =====
     # vendremos aquí cada vez que se reciba un paquete de datos de telemetría
     def process_telemetry_info(self, telemetry_info):
-        # recupero la posición del dron para redibujar el icono en el mapa
         lat = telemetry_info['lat']
         lon = telemetry_info['lon']
-        self.altura = round(telemetry_info['alt'],2)
+        self.altura = round(telemetry_info['alt'], 2)
         self.AlturaLabel.config(text=f"Altura: {self.altura} m")
+        #print(self.dron.heading)
         if self.trace:
-            # dibujamos el ratro
             if self.last_position:
-                self.map_widget.set_path([self.last_position, (lat, lon)], width=5)
+                self.map_widget.set_path([self.last_position, (lat, lon)], width=3)
             self.last_position = (lat, lon)
 
         if self.marker:
-
-            if self.drone_marker:
-                # borro el icono que hay
-                self.map_widget.delete(self.drone_marker)
-            # coloco el icono en su nueva posición
-            self.drone_marker = self.map_widget.set_marker(lat, lon,
-                                                           marker_color_outside="blue",
-                                                           marker_color_circle="black",
-                                                           text="", text_color="blue",
-                                                           icon=self.photo, icon_anchor="center")
+            self.update_drone_marker(lat, lon)
 
     # ======= MARCAR TRAZADO DEL DRON =======
     def set_trace(self):
         self.trace = not self.trace
-
         if self.TrazadoBtn['bg'] == 'black':
             self.informar("TRAZADO_ON")
         elif self.TrazadoBtn['bg'] == 'green':
