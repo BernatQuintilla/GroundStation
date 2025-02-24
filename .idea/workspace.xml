@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="56ee8b3b-2adc-4a1e-b189-11760bafa3fc" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/EstacionDeTierra.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/docs/tabla_dronLink.docx" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/docs/tabla_dronLink.docx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/docs/tabla_dronLink.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/docs/tabla_dronLink.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_RTL_Land.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_RTL_Land.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_altitude.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_altitude.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_arm.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_arm.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_bottomGeofence.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_bottomGeofence.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_connect.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_connect.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_drop.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_drop.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_geofence.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_geofence.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_goto.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_goto.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_local_telemetry.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_local_telemetry.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_mission.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_mission.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_move.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_move.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_nav.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_nav.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_parameters.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_parameters.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_takeOff.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_takeOff.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_telemetry.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_telemetry.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/modules/message_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/message_handler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/tests/prueba.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/tests/prueba.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/tests/test_altitud.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/tests/test_altitud.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/tests/test_bottomGeofence.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/tests/test_bottomGeofence.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/tests/test_drop.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/tests/test_drop.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/tests/test_flightModes.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/tests/test_flightModes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/tests/test_libreria.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/tests/test_libreria.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/tests/test_mission.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/tests/test_mission.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/tests/test_mov.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/tests/test_mov.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/tests/test_nav.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/tests/test_nav.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/tests/test_parameters.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/tests/test_parameters.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/tests/test_reboot.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/tests/test_reboot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/tests/test_scenario.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/tests/test_scenario.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dronLink/tests/test_telemetry_info.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/tests/test_telemetry_info.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 0
+}</component>
+  <component name="ProjectId" id="2sGfZlDwNUohA6bxw94InNabqWG" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;
+  }
+}</component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-495700d161d3-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.22562.220" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="56ee8b3b-2adc-4a1e-b189-11760bafa3fc" name="Changes" comment="" />
+      <created>1738086889453</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1738086889453</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/BodyFrame.py</url>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>
