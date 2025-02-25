@@ -177,7 +177,6 @@ def _executeFlightPlan (self, flightPlan, inWaypoint= None, callback=None, param
 
     self.RTL()
 
-
     if callback != None:
         if self.id == None:
             if params == None:

@@ -411,7 +411,7 @@ class MapFrameClass:
                 messagebox.showerror("Misión Inválida", "El archivo de misión es inválido.")
                 return None
 
-            messagebox.showinfo("Misión Cargada", f'¡La misión "{self.nombre_mision}" se ha cargado correctamente!')
+            #messagebox.showinfo("Misión Cargada", f'¡La misión "{self.nombre_mision}" se ha cargado correctamente!')
             return mission
 
         except FileNotFoundError:
@@ -423,10 +423,14 @@ class MapFrameClass:
 
         return None
 
+    def aqui(self, index, wp):
+        return
+
     def execute_mission(self):
         mission = self.load_mission()
         if mission is None:
             return
+
         mission['speed'] = 1 # Cambio velocidad a 1
 
         self.dron.uploadMission(mission, blocking=False)
@@ -436,10 +440,18 @@ class MapFrameClass:
         if not self.dron.sendTelemetryInfo:
             self.dron.send_telemetry_info(self.process_telemetry_info)
 
-        self.dron.executeMission(blocking=False)
+        self.dron.executeFlightPlan(mission, blocking = False, inWaypoint=self.aqui)
+
+        check_if_landed = lambda: (
+            self.informar("FIN MISION")
+            if self.altura <= 0.03
+            else self.MapFrame.after(1000, check_if_landed)
+        )
+        self.MapFrame.after(1000, check_if_landed)
+
         #messagebox.showinfo("Misión Cumplida", '¡Misión cumplida!')
 
-    
+
 
     # ====== FUNCIONALIDADES ======
     def activar_camara(self):
