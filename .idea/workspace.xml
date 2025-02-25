@@ -6,9 +6,15 @@
   <component name="ChangeListManager">
     <list default="true" id="56ee8b3b-2adc-4a1e-b189-11760bafa3fc" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Dron.py" beforeDir="false" afterPath="$PROJECT_DIR$/Dron.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BodyFrame.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/CreadorMisiones.py" beforeDir="false" afterPath="$PROJECT_DIR$/CreadorMisiones.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dashboard.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/MapFrame.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/MapInterface.py" beforeDir="false" afterPath="$PROJECT_DIR$/MapInterface.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dronLink/modules/dron_mission.py" beforeDir="false" afterPath="$PROJECT_DIR$/dronLink/modules/dron_mission.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PoseDetector.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/map_funcions.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/missions/manolo.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/missions/mission.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,15 +74,5 @@
         </entry>
       </map>
     </option>
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/BodyFrame.py</url>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>

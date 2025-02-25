@@ -3,7 +3,7 @@ import tkinter as tk
 import os
 import tkintermapview
 from tkinter import Canvas
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog
 from tkinter import ttk
 from pymavlink import mavutil
 from PIL import Image, ImageTk
@@ -41,6 +41,8 @@ class MapMission:
         # Waypoints misión
         self.waypoints = []
         self.lines = []
+        self.wp_actions = {'photo': []}
+        self.selected_wp = None
 
     def buildFrame(self, fatherFrame):
 
@@ -48,7 +50,7 @@ class MapMission:
 
         # creamos el widget para el mapa
         self.map_widget = tkintermapview.TkinterMapView(self.MapMission, width=820, height=620, corner_radius=0)
-        self.map_widget.grid(row=1, column=0, columnspan = 10, padx=5, pady=5)
+        self.map_widget.grid(row=1, column=0, columnspan = 9, padx=5, pady=5)
         # cargamos la imagen del dronlab
         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga",
                                             max_zoom=22)
@@ -89,6 +91,23 @@ class MapMission:
         self.save_mission_btn = tk.Button(self.frame, text="Guardar Misión", bg="dark orange", fg="black",
                                           command=self.save_mission)
         self.save_mission_btn.grid(row=0, column=2, padx=5, pady=3, sticky="nesw")
+
+        # === Lista de Waypoints ===
+        self.wp_frame = tk.LabelFrame(self.MapMission, text="Waypoints")
+        self.wp_frame.grid(row=1, column=10, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+
+        self.wp_listbox = tk.Listbox(self.wp_frame, height=10, width=30)
+        self.wp_listbox.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+
+        self.wp_scrollbar = tk.Scrollbar(self.wp_frame, orient="vertical", command=self.wp_listbox.yview)
+        self.wp_scrollbar.grid(row=0, column=1, sticky="ns")
+        self.wp_listbox.config(yscrollcommand=self.wp_scrollbar.set)
+
+        self.edit_wp_button = tk.Button(self.wp_frame, text="Hacer Foto en WP", command=self.photo_waypoint)
+        self.edit_wp_button.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
+
+        self.delete_wp_button = tk.Button(self.wp_frame, text="Cambiar Ángulo en WP", command=self.change_angle_waypoint)
+        self.delete_wp_button.grid(row=2, column=0, padx=5, pady=2, sticky="ew")
 
         return self.MapMission
 
@@ -135,9 +154,8 @@ class MapMission:
 
     # ===== FUNCIONES MISIÓN ======
     def add_marker_event(self, coords):
-
         if not self.dentro_de_geofence(coords[0], coords[1]):
-            messagebox.showwarning("Coordenadas fuera del Geofence","Selecciona coordenadas dentro del Geofence.")
+            messagebox.showwarning("Coordenadas fuera del Geofence", "Selecciona coordenadas dentro del Geofence.")
             return
 
         location_point_img = Image.open("assets/WaypointMarker.png")
@@ -149,24 +167,58 @@ class MapMission:
                                             icon=location_point_icon,
                                             icon_anchor="center")
 
-        self.waypoints.append({'lat': coords[0], 'lon': coords[1], 'marker': marker})
+        wp_data = {'lat': coords[0], 'lon': coords[1], 'marker': marker}
+        self.waypoints.append(wp_data)
 
+        self.wp_listbox.insert(tk.END, f"WP {len(self.waypoints)} ")
+
+        self.wp_actions['photo'].append(0)
         if len(self.waypoints) > 1:
-            last_wp = self.waypoints[-2]
+            prev_wp = self.waypoints[-2]
             current_wp = self.waypoints[-1]
-
-            self.map_widget.set_path(
-                [(last_wp['lat'], last_wp['lon']), (current_wp['lat'], current_wp['lon'])],
+            line = self.map_widget.set_path(
+                [(prev_wp['lat'], prev_wp['lon']), (current_wp['lat'], current_wp['lon'])],
                 color="blue",
                 width=2
             )
+            self.lines.append(line)
 
+    # ===== FUNCIONES MISIION WP ======
+    def photo_waypoint(self):
+
+        selected_wp = self.wp_listbox.curselection()
+        if not selected_wp:
+            messagebox.showwarning("No WP Seleccionado",
+                                   "Por favor, selecciona un waypoint de la lista para tomar una foto.")
+            return
+
+        wp_index = selected_wp[0]
+
+        if 'photo' not in self.wp_actions:
+            self.wp_actions['photo'] = []
+
+        if wp_index >= len(self.wp_actions['photo']):
+            self.wp_actions['photo'].append(0)
+
+        if self.wp_actions['photo'][wp_index] == 1:
+            self.wp_actions['photo'][wp_index] = 0
+        else:
+            self.wp_actions['photo'][wp_index] = 1
+
+        self.wp_listbox.delete(wp_index)
+        self.wp_listbox.insert(wp_index,
+                               f"WP {wp_index + 1} - Foto: {'Sí' if self.wp_actions['photo'][wp_index] == 1 else 'No'}")
+
+    def change_angle_waypoint(self):
+        return
+
+    # ===== GUARDAR MISIÓN ======
     def save_mission(self):
         mission_name = self.mission_name_entry.get().strip()
 
         if not mission_name:
-            mission_name = "mission"
-
+            messagebox.showerror("Introduce nombre de la misión", "Por favor, introduce el nombre de la misión.")
+            return
         if not self.waypoints:
             messagebox.showerror("No hay Waypoints", "Por favor, añade waypoints antes de guardar la misión.")
             return
@@ -184,6 +236,12 @@ class MapMission:
 
         with open(mission_path, "w") as mission_file:
             json.dump(mission, mission_file, indent=4)
+
+        wp_actions_file = mission_name
+        wp_actions_folder = "waypoints"
+        wp_actions_path = os.path.join(wp_actions_folder, f"{wp_actions_file}.json")
+        with open(wp_actions_path, "w") as file:
+            json.dump(self.wp_actions, file, indent=4)
 
         self.MapMission.master.destroy()
         messagebox.showinfo("Misión Guardada",f'¡La misión se ha guardado como "{mission_name}.json" en la carpeta "missions"!')

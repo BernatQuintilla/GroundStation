@@ -6,15 +6,18 @@ from tkinter import Canvas
 from tkinter import messagebox
 from tkinter import ttk
 from tkinter import StringVar
+from tkinter import filedialog
 from pymavlink import mavutil
 from PIL import Image, ImageTk, ImageGrab
 from CamaraVideo import *
 from ObjectRecognition import *
 from CreadorMisiones import *
-import json
 import io
 import threading
-
+import cv2
+import os
+from datetime import datetime
+import shutil
 from dronLink.modules.dron_telemetry import send_telemetry_info
 
 
@@ -60,9 +63,10 @@ class MapFrameClass:
         self.marker_icon = ImageTk.PhotoImage(self.resized_marker_icon)
 
         # Nombre misión
-        self.nombre_mision = "mission"
+        self.nombre_mision = ""
         self.mission_names = []
         self.mission_var = tk.StringVar()
+        self.waypoints_actions = None
 
     def buildFrame(self, fatherFrame):
 
@@ -286,7 +290,6 @@ class MapFrameClass:
             # Si hay que quitarlo, lo hago aquí
             if self.drone_marker:
                 self.map_widget.delete(self.drone_marker)
-                self.map_widget.delete_all_marker()
             # if not self.trace:
                 #self.dron.stop_sending_telemetry_info()
             self.informar('DRON_OCULTO')
@@ -317,7 +320,6 @@ class MapFrameClass:
 
         if self.drone_marker:
             self.map_widget.delete(self.drone_marker)
-            self.map_widget.delete_all_marker()
 
         self.drone_marker = self.map_widget.set_marker(
             lat, lon,
@@ -391,21 +393,71 @@ class MapFrameClass:
     def show_mission_map(self):
         map_window = tk.Toplevel()
         map_window.title("Creador de Misiones")
-        map_window.geometry("820x620")
+        map_window.geometry("920x620")
 
         map_mission_class = MapMission(self.dron, self.altura_vuelo)
         map_frame = map_mission_class.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
 
     def select_mission(self):
-        return
+        mission_path = filedialog.askopenfilename(
+            title="Seleccionar Misión",
+            initialdir=os.path.join(os.getcwd(), "missions"),
+            filetypes=(("JSON files", "*.json"), ("All files", "*.*"))
+        )
+
+        if mission_path:
+            self.nombre_mision = os.path.splitext(os.path.basename(mission_path))[0]
+            messagebox.showinfo("Misión Seleccionada", f'La misión "{self.nombre_mision}" ha sido seleccionada.')
+        self.load_visual_mission_waypoints(mission_path)
+
+    def load_visual_mission_waypoints(self, mission_path):
+        try:
+            with open(mission_path, "r") as file:
+                mission_data = json.load(file)
+
+            waypoints = mission_data.get("waypoints", [])
+            self.map_widget.delete_all_marker()
+            self.map_widget.delete_all_path()
+
+            wp_positions = []
+
+            location_point_img = Image.open("assets/WaypointMarker.png")
+            resized_location_point = location_point_img.resize((25, 25), Image.LANCZOS)
+            location_point_icon = ImageTk.PhotoImage(resized_location_point)
+
+            self.wp_icon = location_point_icon
+
+            for i, wp in enumerate(waypoints, start=1):
+                lat, lon = wp["lat"], wp["lon"]
+                self.map_widget.set_marker(lat, lon,
+                                           text=f"WP {i}",
+                                           icon=self.wp_icon,
+                                           icon_anchor="center")
+                wp_positions.append((lat, lon))
+
+            if len(wp_positions) > 1:
+                self.map_widget.set_path(wp_positions, width=3, color="blue")
+
+            print(f"Misión '{self.nombre_mision}' cargada con éxito!")
+
+        except FileNotFoundError:
+            print(f"Error: No se encontró el archivo '{mission_path}'.")
+        except json.JSONDecodeError:
+            print(f"Error: Formato JSON inválido en '{mission_path}'.")
+
 
     def load_mission(self):
+        if self.nombre_mision == "":
+            messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
+            return None
         try:
             mission_path = os.path.join("missions", f"{self.nombre_mision}.json")
-
+            actions_waypoints_path = os.path.join("waypoints", f"{self.nombre_mision}.json")
             with open(mission_path, "r") as mission_file:
                 mission = json.load(mission_file)
+            with open(actions_waypoints_path, "r") as file:
+                self.waypoints_actions = json.load(file)
 
             if "takeOffAlt" not in mission or "waypoints" not in mission:
                 messagebox.showerror("Misión Inválida", "El archivo de misión es inválido.")
@@ -423,7 +475,41 @@ class MapFrameClass:
 
         return None
 
+    # Función para hacer fotos
+    def capture_and_save_photo(self):
+        mission_folder = f"photos/{self.nombre_mision}"
+
+        if os.path.exists(mission_folder):
+            shutil.rmtree(mission_folder)
+            print(f"Carpeta '{mission_folder}' eliminada.")
+
+        os.makedirs(mission_folder)
+        print(f"Carpeta '{mission_folder}' creada.")
+
+        cap = cv2.VideoCapture(0)
+
+        if not cap.isOpened():
+            print("Error: No se ha podido acceder a la cámara.")
+            return
+
+        ret, frame = cap.read()
+
+        if ret:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{mission_folder}/photo_{timestamp}.jpg"
+
+            cv2.imwrite(filename, frame)
+            print(f"Foto guardada como {filename}.")
+
+        else:
+            print("Error: Fallo en capturar la foto.")
+
+        cap.release()
+        cv2.destroyAllWindows()
+
     def aqui(self, index, wp):
+        if self.waypoints_actions['photo'][index] == 1:
+            self.capture_and_save_photo()
         return
 
     def execute_mission(self):
