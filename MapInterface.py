@@ -13,6 +13,7 @@ from ObjectRecognition import *
 from CreadorMisiones import *
 import json
 import io
+import threading
 
 from dronLink.modules.dron_telemetry import send_telemetry_info
 
@@ -195,13 +196,17 @@ class MapFrameClass:
 
     def arm_and_takeOff(self):
         self.RTL_active = True
-        self.informar('DESPEGANDO') # Intento poner amarillo pero no funciona
-
-        self.altura_vuelo = int(self.altura_input.get())
-        self.dron.arm()
-        self.dron.takeOff(self.altura_vuelo)
-        # una vez armado cambio en color de boton
-        self.informar('VOLANDO')
+        self.informar('DESPEGANDO')
+        self.MapFrame.update_idletasks()
+        # Ajuste para poder mostrar icono en amarillo y botón
+        def takeoff_procedure():
+            try:
+                self.altura_vuelo = int(self.altura_input.get())
+                self.dron.arm()
+                self.dron.takeOff(self.altura_vuelo)
+            finally:
+                self.MapFrame.after(0, lambda: self.informar('VOLANDO'))
+        threading.Thread(target=takeoff_procedure, daemon=True).start()
 
     def RTL(self):
         if self.dron.going:
@@ -392,6 +397,9 @@ class MapFrameClass:
         map_frame = map_mission_class.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
 
+    def select_mission(self):
+        return
+
     def load_mission(self):
         try:
             mission_path = os.path.join("missions", f"{self.nombre_mision}.json")
@@ -431,9 +439,7 @@ class MapFrameClass:
         self.dron.executeMission(blocking=False)
         #messagebox.showinfo("Misión Cumplida", '¡Misión cumplida!')
 
-
-    def select_mission(self):
-        return
+    
 
     # ====== FUNCIONALIDADES ======
     def activar_camara(self):
