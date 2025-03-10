@@ -19,10 +19,11 @@ import os
 from datetime import datetime
 import shutil
 from dronLink.modules.dron_telemetry import send_telemetry_info
+from ultralytics import YOLO
 
 
 class MapFrameClass:
-
+    # ======== INICIALIZAR CLASE ========
     def __init__(self, dron):
         # guardamos el objeto de la clase dron con el que estamos controlando el dron
         self.dron = dron
@@ -35,7 +36,6 @@ class MapFrameClass:
         # atributos para establecer el trazado del dron
         self.trace = False
         self.last_position = None  # actualizar trazado
-
 
         # Cargamos los tres iconos
         self.RTL_active = False
@@ -68,13 +68,21 @@ class MapFrameClass:
         self.mission_var = tk.StringVar()
         self.waypoints_actions = None
 
+        self.map_frame = None
+        self.gallery_frame = None
+        self.gallery_processed_frame = None
+
+        # YOLO model
+        self.model = YOLO("models/yolov8n.pt")
+
+    # ======== BUILD FRAME ========
     def buildFrame(self, fatherFrame):
 
         self.MapFrame = tk.Frame(fatherFrame)  # create new frame where the map will be allocated
 
         # creamos el widget para el mapa
         self.map_widget = tkintermapview.TkinterMapView(self.MapFrame, width=1000, height=600, corner_radius=0)
-        self.map_widget.grid(row=1, column=0, columnspan=13, padx=5, pady=5)
+        self.map_widget.grid(row=1, column=0, columnspan=15, padx=5, pady=5)
         # cargamos la imagen del dronlab
         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga",
                                             max_zoom=22)
@@ -136,8 +144,17 @@ class MapFrameClass:
         self.CrearMisionBtn = tk.Button(self.mision_frame, text="Crear misión", bg="dark orange", fg="black", command = self.show_mission_map)
         self.CrearMisionBtn.grid(row=0, column=0, padx=5, pady=3, sticky="nesw")
 
-        self.AreaBtn = tk.Button(self.mision_frame, text="Crear área de observación", bg="dark orange", fg="black")
-        self.AreaBtn.grid(row=0, column=1, padx=5, pady=3, sticky="nesw")
+        self.MisionLabel = tk.Label(
+            self.mision_frame,
+            text=f"Misión: no seleccionada",
+            bg="light gray",
+            fg="black",
+            width=20,  # Adjust the width to your needs
+        )
+        self.MisionLabel.grid(row=0, column=1, columnspan=2, padx=5, pady=3, sticky="nesw")
+
+        #self.AreaBtn = tk.Button(self.mision_frame, text="Crear área de observación", bg="dark orange", fg="black")
+        #self.AreaBtn.grid(row=0, column=1, padx=5, pady=3, sticky="nesw")
 
         self.SelMisionBtn = tk.Button(self.mision_frame, text="Seleccionar misión", bg="dark orange", fg="black", command=self.select_mission)
         self.SelMisionBtn.grid(row=1, column=0, padx=5, pady=3, sticky="nesw")
@@ -183,6 +200,22 @@ class MapFrameClass:
 
         self.TrazadoBtn = tk.Button(self.tele_frame, text="Activar trazado", bg="black", fg="white", command= self.set_trace)
         self.TrazadoBtn.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
+
+        # === FRAME GALERIA DE IMAGENES ===
+        self.galeria_frame = tk.LabelFrame(self.MapFrame, text="Galería de imágenes de misión")
+        self.galeria_frame.grid(row=0, column=13, columnspan=1, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+
+        self.galeria_frame.rowconfigure(0, weight=2)
+        self.galeria_frame.rowconfigure(1, weight=2)
+        self.galeria_frame.columnconfigure(0, weight=2)
+
+        self.GaleriaBtn = tk.Button(self.galeria_frame, text="Galería de imágenes", bg="dark orange", fg="black", command=self.show_gallery_page)
+        self.GaleriaBtn.grid(row=0, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
+
+        self.GaleriaProcesadaBtn = tk.Button(self.galeria_frame, text="Galería de imágenes procesadas", bg="dark orange", fg="black", command = self.show_gallery_processed_page)
+        self.GaleriaProcesadaBtn.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
+
+        self.map_frame = self.MapFrame
 
         return self.MapFrame
 
@@ -277,7 +310,7 @@ class MapFrameClass:
             self.ShowDronBtn['fg'] = 'white'
             self.ShowDronBtn['text'] = 'Mostrar dron'
 
-    # ======= MOSTRAR ICONO DEL DRON =======
+    # ======= MOSTRAR Y MODIFICAR ICONO DEL DRON =======
     def show_dron(self):
         # Muestro el dron o dejo de mostrarlo
         self.marker = not self.marker
@@ -332,7 +365,6 @@ class MapFrameClass:
         )
 
     # ===== DATOS DE TELEMETRÍA =====
-    # vendremos aquí cada vez que se reciba un paquete de datos de telemetría
     def process_telemetry_info(self, telemetry_info):
         lat = telemetry_info['lat']
         lon = telemetry_info['lon']
@@ -365,7 +397,6 @@ class MapFrameClass:
                 self.dron.stop_sending_telemetry_info()
 
     # ====== GEOFENCE =======
-    # aqui venimos cuando tenemos ya definido el geofence y lo queremos enviar al dron
     def GeoFence(self):
 
         with open("GeoFenceScenario.json", "r") as file:
@@ -398,7 +429,7 @@ class MapFrameClass:
         map_mission_class = MapMission(self.dron, self.altura_vuelo)
         map_frame = map_mission_class.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
-
+    # ====== SELECCIONAR MISION ======
     def select_mission(self):
         mission_path = filedialog.askopenfilename(
             title="Seleccionar Misión",
@@ -408,8 +439,9 @@ class MapFrameClass:
 
         if mission_path:
             self.nombre_mision = os.path.splitext(os.path.basename(mission_path))[0]
-            messagebox.showinfo("Misión Seleccionada", f'La misión "{self.nombre_mision}" ha sido seleccionada.')
+            #messagebox.showinfo("Misión Seleccionada", f'La misión "{self.nombre_mision}" ha sido seleccionada.')
         self.load_visual_mission_waypoints(mission_path)
+        self.MisionLabel.config(text=f"Misión: {self.nombre_mision}")
 
     def load_visual_mission_waypoints(self, mission_path):
         try:
@@ -446,7 +478,7 @@ class MapFrameClass:
         except json.JSONDecodeError:
             print(f"Error: Formato JSON inválido en '{mission_path}'.")
 
-
+    # ====== EJECUTAR MISION ======
     def load_mission(self):
         if self.nombre_mision == "":
             messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
@@ -475,16 +507,12 @@ class MapFrameClass:
 
         return None
 
-    # Función para hacer fotos
     def capture_and_save_photo(self):
         mission_folder = f"photos/{self.nombre_mision}"
 
-        if os.path.exists(mission_folder):
-            shutil.rmtree(mission_folder)
-            print(f"Carpeta '{mission_folder}' eliminada.")
-
-        os.makedirs(mission_folder)
-        print(f"Carpeta '{mission_folder}' creada.")
+        if not os.path.exists(mission_folder):
+            os.makedirs(mission_folder)
+            print(f"Carpeta '{mission_folder}' creada.")
 
         cap = cv2.VideoCapture(0)
 
@@ -537,7 +565,162 @@ class MapFrameClass:
 
         #messagebox.showinfo("Misión Cumplida", '¡Misión cumplida!')
 
+    # ====== GALERIA MISION ======
+    def show_gallery_page(self):
+        if self.nombre_mision == "":
+            messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
+            return None
 
+        image_directory = f"photos/{self.nombre_mision}"
+        if not os.path.exists(image_directory):
+            messagebox.showerror("Misión sin imágenes", "La misión seleccionada no tiene imágenes.")
+            return None
+
+        if self.map_frame:
+            self.map_frame.grid_forget()
+
+        self.gallery_frame = tk.Frame(self.MapFrame)
+        self.gallery_frame.grid(row=0, column=0, columnspan=15, padx=5, pady=5, sticky="nsew")
+
+        self.gallery_frame.rowconfigure(0, weight=0)
+        self.gallery_frame.rowconfigure(1, weight=10)
+
+        self.gallery_frame.columnconfigure(0, weight=1)
+        self.gallery_frame.columnconfigure(1, weight=10)
+        self.gallery_frame.columnconfigure(2, weight=1)
+
+        image_directory = f"photos/{self.nombre_mision}"
+        if not os.path.exists(image_directory):
+            messagebox.showerror("Error", f"El directorio {image_directory} no existe.")
+            return
+
+        images = [f for f in os.listdir(image_directory) if f.endswith(('.png', '.jpg', '.jpeg', '.bmp'))]
+
+        self.current_image_index = 0
+        self.img_labels = []
+
+        def display_image(index):
+            for label in self.img_labels:
+                label.destroy()
+
+            image_name = images[index]
+            image_path = os.path.join(image_directory, image_name)
+            img = Image.open(image_path)
+            img = img.resize((800, 600), Image.Resampling.LANCZOS)
+            img_photo = ImageTk.PhotoImage(img)
+
+            img_label = tk.Label(self.gallery_frame, image=img_photo)
+            img_label.image = img_photo
+            img_label.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
+
+            self.img_labels.append(img_label)
+
+        display_image(self.current_image_index)
+
+        def next_image():
+            if self.current_image_index < len(images) - 1:
+                self.current_image_index += 1
+                display_image(self.current_image_index)
+
+        def prev_image():
+            if self.current_image_index > 0:
+                self.current_image_index -= 1
+                display_image(self.current_image_index)
+
+        left_button = tk.Button(self.gallery_frame, text="<", bg="dark orange", fg="black", command=prev_image)
+        left_button.grid(row=0, column=0, padx=20, pady=10, sticky="nsew")
+
+        right_button = tk.Button(self.gallery_frame, text=">", bg="dark orange", fg="black", command=next_image)
+        right_button.grid(row=0, column=2, padx=20, pady=10, sticky="nsew")
+
+        back_button = tk.Button(self.gallery_frame, text="Volver", bg="dark orange", fg="black",
+                                command=self.show_main_page)
+        back_button.grid(row=0, column=1, padx=20, pady=10, sticky="nsew")
+
+    # ====== GALERIA MISION PROCESADA ======
+    def show_gallery_processed_page(self):
+        if self.nombre_mision == "":
+            messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
+            return None
+
+        image_directory = f"photos/{self.nombre_mision}"
+        if not os.path.exists(image_directory):
+            messagebox.showerror("Misión sin imágenes", "La misión seleccionada no tiene imágenes.")
+            return None
+
+        if self.map_frame:
+            self.map_frame.grid_forget()
+
+        self.gallery_processed_frame = tk.Frame(self.MapFrame)
+        self.gallery_processed_frame.grid(row=0, column=0, columnspan=15, padx=5, pady=5, sticky="nsew")
+        self.gallery_processed_frame.rowconfigure(0, weight=0)
+        self.gallery_processed_frame.rowconfigure(1, weight=10)
+
+        self.gallery_processed_frame.columnconfigure(0, weight=1)
+        self.gallery_processed_frame.columnconfigure(1, weight=10)
+        self.gallery_processed_frame.columnconfigure(2, weight=1)
+
+        image_directory = f"photos/{self.nombre_mision}"
+        if not os.path.exists(image_directory):
+            messagebox.showerror("Error", f"El directorio {image_directory} no existe.")
+            return
+
+        images = [f for f in os.listdir(image_directory) if f.endswith(('.png', '.jpg', '.jpeg', '.bmp'))]
+
+        self.current_image_index = 0
+        self.img_labels = []
+
+        def display_image(index):
+            for label in self.img_labels:
+                label.destroy()
+
+            image_name = images[index]
+            image_path = os.path.join(image_directory, image_name)
+
+            results = self.model(image_path)
+            processed_img = results[0].plot()
+
+            processed_img = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
+
+            img_pil = Image.fromarray(processed_img)
+            img_pil = img_pil.resize((800, 600), Image.Resampling.LANCZOS)
+            img_photo = ImageTk.PhotoImage(img_pil)
+
+            img_label = tk.Label(self.gallery_processed_frame, image=img_photo)
+            img_label.image = img_photo
+            img_label.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
+
+            self.img_labels.append(img_label)
+
+        display_image(self.current_image_index)
+
+        def next_image():
+            if self.current_image_index < len(images) - 1:
+                self.current_image_index += 1
+                display_image(self.current_image_index)
+
+        def prev_image():
+            if self.current_image_index > 0:
+                self.current_image_index -= 1
+                display_image(self.current_image_index)
+
+        left_button = tk.Button(self.gallery_processed_frame, text="<", bg="dark orange", fg="black",
+                                command=prev_image)
+        left_button.grid(row=0, column=0, padx=20, pady=10, sticky="nsew")
+
+        right_button = tk.Button(self.gallery_processed_frame, text=">", bg="dark orange", fg="black",
+                                 command=next_image)
+        right_button.grid(row=0, column=2, padx=20, pady=10, sticky="nsew")
+
+        back_button = tk.Button(self.gallery_processed_frame, text="Volver", bg="dark orange", fg="black",
+                                command=self.show_main_page)
+        back_button.grid(row=0, column=1, padx=20, pady=10, sticky="nsew")
+
+    def show_main_page(self):
+        if self.gallery_frame:
+            self.gallery_frame.grid_forget()
+        if self.gallery_processed_frame:
+            self.gallery_processed_frame.grid_forget()
 
     # ====== FUNCIONALIDADES ======
     def activar_camara(self):

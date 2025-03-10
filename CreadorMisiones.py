@@ -10,6 +10,7 @@ from PIL import Image, ImageTk
 from CamaraVideo import *
 from ObjectRecognition import *
 import json
+import shutil
 
 class MapMission:
 
@@ -49,7 +50,7 @@ class MapMission:
         self.MapMission = tk.Frame(fatherFrame)  # create new frame where the map will be allocated
 
         # creamos el widget para el mapa
-        self.map_widget = tkintermapview.TkinterMapView(self.MapMission, width=820, height=620, corner_radius=0)
+        self.map_widget = tkintermapview.TkinterMapView(self.MapMission, width=820, height=600, corner_radius=0)
         self.map_widget.grid(row=1, column=0, columnspan = 9, padx=5, pady=5)
         # cargamos la imagen del dronlab
         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga",
@@ -183,7 +184,7 @@ class MapMission:
             )
             self.lines.append(line)
 
-    # ===== FUNCIONES MISIION WP ======
+    # ===== FUNCIONES MISION WP ======
     def photo_waypoint(self):
 
         selected_wp = self.wp_listbox.curselection()
@@ -228,6 +229,12 @@ class MapMission:
             os.makedirs(mission_folder)
 
         mission_path = os.path.join(mission_folder, f"{mission_name}.json")
+
+        if os.path.exists(mission_path):
+            photos_folder = f"photos/{mission_name}"
+            if os.path.exists(photos_folder):
+                shutil.rmtree(photos_folder)
+                print(f"Carpeta '{photos_folder}' eliminada.")
 
         mission = {
             "takeOffAlt": self.altura_vuelo,
