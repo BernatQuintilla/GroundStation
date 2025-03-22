@@ -660,15 +660,30 @@ class MapFrameClass:
         self.gallery_processed_frame.columnconfigure(1, weight=10)
         self.gallery_processed_frame.columnconfigure(2, weight=1)
 
-        image_directory = f"photos/{self.nombre_mision}"
-        if not os.path.exists(image_directory):
-            messagebox.showerror("Error", f"El directorio {image_directory} no existe.")
-            return
-
         images = [f for f in os.listdir(image_directory) if f.endswith(('.png', '.jpg', '.jpeg', '.bmp'))]
-
         self.current_image_index = 0
         self.img_labels = []
+
+        # Diccionario de clases: (https://stackoverflow.com/questions/77477793/class-ids-and-their-relevant-class-names-for-yolov8-model#:~:text=I%20understand%20there%20are%20approximately,object%20detection%20model%20of%20YOLOv8.)
+        class_dict = {0: 'person',1: 'bicycle', 41: 'cup', 46: 'banana', 47: 'apple', 56: 'chair',
+                      67: 'cell phone', 73: 'book', 74: 'clock', 76: 'scissors', 77: 'teddy bear'}
+
+        self.selected_class = tk.IntVar()
+        self.selected_class.set(0)
+
+        class_names = list(class_dict.values())
+        self.selected_name = tk.StringVar()
+
+        class_menu = tk.OptionMenu(self.gallery_processed_frame, self.selected_name, *class_names,
+                                   command=lambda x: on_class_select(x))
+
+        class_menu.grid(row=0, column=3, padx=5, pady=5)
+
+        def on_class_select(selected_name):
+            selected_key = [key for key, value in class_dict.items() if value == selected_name][0]
+            self.selected_class.set(selected_key)
+            display_image(self.current_image_index)
+
 
         def display_image(index):
             for label in self.img_labels:
@@ -677,9 +692,12 @@ class MapFrameClass:
             image_name = images[index]
             image_path = os.path.join(image_directory, image_name)
 
-            results = self.model(image_path)
-            processed_img = results[0].plot()
+            selected_class = [self.selected_class.get()]
+            self.model.classes = selected_class
 
+            results = self.model.predict(source=image_path, save=False, classes=selected_class)
+
+            processed_img = results[0].plot()
             processed_img = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
 
             img_pil = Image.fromarray(processed_img)
@@ -715,6 +733,7 @@ class MapFrameClass:
         back_button = tk.Button(self.gallery_processed_frame, text="Volver", bg="dark orange", fg="black",
                                 command=self.show_main_page)
         back_button.grid(row=0, column=1, padx=20, pady=10, sticky="nsew")
+
 
     def show_main_page(self):
         if self.gallery_frame:
