@@ -536,6 +536,8 @@ class MapFrameClass:
         cv2.destroyAllWindows()
 
     def aqui(self, index, wp):
+        if self.waypoints_actions['angle'][index] != -1:
+            self.dron.changeHeading(self.waypoints_actions['angle'][index])
         if self.waypoints_actions['photo'][index] == 1:
             self.capture_and_save_photo()
         return

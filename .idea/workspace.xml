@@ -6,9 +6,22 @@
   <component name="ChangeListManager">
     <list default="true" id="56ee8b3b-2adc-4a1e-b189-11760bafa3fc" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CreadorMisiones.py" beforeDir="false" afterPath="$PROJECT_DIR$/CreadorMisiones.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MapInterface.py" beforeDir="false" afterPath="$PROJECT_DIR$/MapInterface.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/missions/mission1.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/waypoints/mission1.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/missions/mission.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/missions/mission2.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/missions/prueba.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250310_154926.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250310_154936.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250310_154951.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250310_154959.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/prueba/photo_20250317_165657.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/prueba/photo_20250317_165706.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/prueba/photo_20250317_165715.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/prueba/photo_20250317_165723.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/waypoints/mission.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/waypoints/mission2.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/waypoints/prueba.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

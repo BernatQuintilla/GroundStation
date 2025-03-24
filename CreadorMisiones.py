@@ -42,8 +42,9 @@ class MapMission:
         # Waypoints misión
         self.waypoints = []
         self.lines = []
-        self.wp_actions = {'photo': []}
+        self.wp_actions = {'photo': [],'angle': []}
         self.selected_wp = None
+        self.new_direction = "-"
 
     def buildFrame(self, fatherFrame):
 
@@ -174,6 +175,8 @@ class MapMission:
         self.wp_listbox.insert(tk.END, f"WP {len(self.waypoints)} ")
 
         self.wp_actions['photo'].append(0)
+        self.wp_actions['angle'].append(-1)
+
         if len(self.waypoints) > 1:
             prev_wp = self.waypoints[-2]
             current_wp = self.waypoints[-1]
@@ -206,11 +209,69 @@ class MapMission:
         else:
             self.wp_actions['photo'][wp_index] = 1
 
+        direction_angles_reverse = {
+            360: "N",
+            45: "NE",
+            90: "E",
+            135: "SE",
+            180: "S",
+            225: "SW",
+            270: "W",
+            315: "NW",
+            -1: "-"
+        }
+        if wp_index < len(self.wp_actions['angle']):
+            angle = self.wp_actions['angle'][wp_index]
+            direction = direction_angles_reverse[angle]
+        else:
+            direction = "-"
+
         self.wp_listbox.delete(wp_index)
         self.wp_listbox.insert(wp_index,
-                               f"WP {wp_index + 1} - Foto: {'Sí' if self.wp_actions['photo'][wp_index] == 1 else 'No'}")
+                               f"WP {wp_index + 1} - Foto: {'Sí' if self.wp_actions['photo'][wp_index] == 1 else 'No'} "
+                               f"- Ángulo: ( {direction} )")
 
     def change_angle_waypoint(self):
+        selected_wp = self.wp_listbox.curselection()
+        if not selected_wp:
+            messagebox.showwarning("No WP Seleccionado",
+                                   "Por favor, selecciona un waypoint de la lista para cambiar ángulo")
+            return
+
+        wp_index = selected_wp[0]
+
+        if 'angle' not in self.wp_actions:
+            self.wp_actions['angle'] = []
+
+        while wp_index >= len(self.wp_actions['angle']):
+            self.wp_actions['angle'].append(-1)
+
+        direction_angles = {
+            "N": 360,
+            "NE": 45,
+            "E": 90,
+            "SE": 135,
+            "S": 180,
+            "SW": 225,
+            "W": 270,
+            "NW": 315,
+            "Eliminar": -1  # Opción para borrar el ángulo
+        }
+        self.new_direction = simpledialog.askstring("Selecciona Dirección",
+                                               "Ingresa una dirección (N, NE, E, SE, S, SW, W, NW):\n Para eliminar ingresa: Eliminar")
+
+        if self.new_direction not in direction_angles and self.new_direction != "-":
+            messagebox.showwarning("Dirección inválida",
+                                   "Por favor, ingresa una de las opciones: N, NE, E, SE, S, SW, W, NW")
+            return
+
+        self.wp_actions['angle'][wp_index] = direction_angles[self.new_direction]
+
+        if self.new_direction == "Eliminar":
+            self.new_direction = "-"
+        self.wp_listbox.delete(wp_index)
+        self.wp_listbox.insert(wp_index,
+                               f"WP {wp_index + 1} - Foto: {'Sí' if self.wp_actions['photo'][wp_index] == 1 else 'No'} - Ángulo: ( {self.new_direction} )")
         return
 
     # ===== GUARDAR MISIÓN ======
