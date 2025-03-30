@@ -5,7 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="56ee8b3b-2adc-4a1e-b189-11760bafa3fc" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/COLMAP/Levantamiento3D.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MapInterface.py" beforeDir="false" afterPath="$PROJECT_DIR$/MapInterface.py" afterDir="false" />
     </list>

@@ -822,6 +822,8 @@ class MapFrameClass:
 
     # ======== INICIAR JUEGO ========
     def iniciar_juego(self):
+        self.arm_and_takeOff()
+
         self.cam_window = tk.Toplevel(self.MapFrame)
         self.cam_window.title("Detección de Objetos")
         self.cam_window.geometry("700x500")
