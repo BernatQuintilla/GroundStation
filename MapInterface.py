@@ -20,6 +20,8 @@ from datetime import datetime
 import shutil
 from dronLink.modules.dron_telemetry import send_telemetry_info
 from ultralytics import YOLO
+import cv2
+import numpy as np
 
 
 class MapFrameClass:
@@ -29,7 +31,7 @@ class MapFrameClass:
         self.dron = dron
         self.altura = 0
         self.altura_vuelo = 5
-        self.dron.navSpeed = 0.001
+        self.dron.navSpeed = 0.5
         # atributos necesarios para crear el geofence
         self.vertex_count = 4
 
@@ -71,9 +73,15 @@ class MapFrameClass:
         self.map_frame = None
         self.gallery_frame = None
         self.gallery_processed_frame = None
+        self.stitch_frame = None
 
         # YOLO model
         self.model = YOLO("models/yolov8n.pt")
+
+        # Reconocimiento Objetos
+        self.cap = None
+        self.video_label = None
+        self.detected_objects = []
 
     # ======== BUILD FRAME ========
     def buildFrame(self, fatherFrame):
@@ -82,7 +90,7 @@ class MapFrameClass:
 
         # creamos el widget para el mapa
         self.map_widget = tkintermapview.TkinterMapView(self.MapFrame, width=1000, height=600, corner_radius=0)
-        self.map_widget.grid(row=1, column=0, columnspan=15, padx=5, pady=5)
+        self.map_widget.grid(row=1, column=0, columnspan=16, padx=5, pady=5)
         # cargamos la imagen del dronlab
         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga",
                                             max_zoom=22)
@@ -109,7 +117,7 @@ class MapFrameClass:
 
         # === FRAME CONTROL ===
         self.control_frame = tk.LabelFrame(self.MapFrame, text="Control")
-        self.control_frame.grid(row=0, column=0, columnspan=3, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+        self.control_frame.grid(row=0, column=0, columnspan=2, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
 
         self.control_frame.rowconfigure(0, weight=2)
         self.control_frame.rowconfigure(1, weight=2)
@@ -134,7 +142,7 @@ class MapFrameClass:
 
         # === FRAME GESTIÓN DE MISIONES ===
         self.mision_frame = tk.LabelFrame(self.MapFrame, text="Gestión de misiones")
-        self.mision_frame.grid(row=0, column=3, columnspan=4, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+        self.mision_frame.grid(row=0, column=2, columnspan=4, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
 
         self.mision_frame.rowconfigure(0, weight=1)
         self.mision_frame.rowconfigure(1, weight=1)
@@ -166,24 +174,9 @@ class MapFrameClass:
         self.EjecutarMisionBtn = tk.Button(self.mision_frame, text="Ejecutar misión", bg="black", fg="white", command = self.execute_mission)
         self.EjecutarMisionBtn.grid(row=1, column=1, padx=5, pady=3, sticky="nesw")
 
-        # === FRAME FUNCIONALIDADES ===
-        self.func_frame = tk.LabelFrame(self.MapFrame, text="Funcionalidades")
-        self.func_frame.grid(row=0, column=7, columnspan=4, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
-
-        self.func_frame.rowconfigure(0, weight=2)
-        self.func_frame.rowconfigure(1, weight=2)
-        self.func_frame.columnconfigure(0, weight=2)
-        self.func_frame.columnconfigure(1, weight=2)
-
-        self.ActivarCamBtn = tk.Button(self.func_frame, text="Activar cámara", bg="dark orange", fg="black", command=self.activar_camara)
-        self.ActivarCamBtn.grid(row=0, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
-
-        self.ObjectRecognBtn = tk.Button(self.func_frame, text="Reconocimiento de Objetos", bg="dark orange", fg="black", command=self.activar_ObjRecognition)
-        self.ObjectRecognBtn.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
-
         # === FRAME DATOS TELEMETRÍA ===
         self.tele_frame = tk.LabelFrame(self.MapFrame, text="Datos telemetría")
-        self.tele_frame.grid(row=0, column=12, columnspan=1, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+        self.tele_frame.grid(row=0, column=6, columnspan=1, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
 
         self.tele_frame.rowconfigure(0, weight=2)
         self.tele_frame.rowconfigure(1, weight=2)
@@ -196,24 +189,47 @@ class MapFrameClass:
             fg="black",
             width=12,
         )
-        self.AlturaLabel.grid(row=0, column=1, columnspan=2, padx=5, pady=3, sticky="nesw")
+        self.AlturaLabel.grid(row=0, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        self.TrazadoBtn = tk.Button(self.tele_frame, text="Activar trazado", bg="black", fg="white", command= self.set_trace)
-        self.TrazadoBtn.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
+        self.TrazadoBtn = tk.Button(self.tele_frame, text="Activar trazado", bg="black", fg="white",
+                                    command=self.set_trace)
+        self.TrazadoBtn.grid(row=1, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        # === FRAME GALERIA DE IMAGENES ===
-        self.galeria_frame = tk.LabelFrame(self.MapFrame, text="Galería de imágenes de misión")
-        self.galeria_frame.grid(row=0, column=13, columnspan=1, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+        # === FRAME DETECCION DE OBJETOS ===
+        self.func_frame = tk.LabelFrame(self.MapFrame, text="Detección de objetos")
+        self.func_frame.grid(row=0, column=7, columnspan=3, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
 
-        self.galeria_frame.rowconfigure(0, weight=2)
-        self.galeria_frame.rowconfigure(1, weight=2)
+        self.func_frame.rowconfigure(0, weight=2)
+        self.func_frame.rowconfigure(1, weight=2)
+        self.func_frame.columnconfigure(0, weight=2)
+        self.func_frame.columnconfigure(1, weight=2)
+
+        self.ActivarCamBtn = tk.Button(self.func_frame, text="Iniciar juego", bg="dark orange", fg="black", command=self.iniciar_juego)
+        self.ActivarCamBtn.grid(row=0, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
+
+        self.ObjectRecognBtn = tk.Button(self.func_frame, text="Galería imágenes procesadas", bg="dark orange", fg="black", command=self.show_gallery_processed_page)
+        self.ObjectRecognBtn.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
+
+        # === FRAME IMAGE STITCHING ===
+        self.galeria_frame = tk.LabelFrame(self.MapFrame, text="Image Stitching")
+        self.galeria_frame.grid(row=0, column=12, columnspan=4, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+
+        self.galeria_frame.rowconfigure(0, weight=1)
+        self.galeria_frame.rowconfigure(1, weight=1)
         self.galeria_frame.columnconfigure(0, weight=2)
+        self.galeria_frame.columnconfigure(1, weight=2)
 
-        self.GaleriaBtn = tk.Button(self.galeria_frame, text="Galería de imágenes", bg="dark orange", fg="black", command=self.show_gallery_page)
-        self.GaleriaBtn.grid(row=0, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
+        self.GaleriaBtn = tk.Button(self.galeria_frame, text="Galería imágenes", bg="dark orange", fg="black", command=self.show_gallery_page)
+        self.GaleriaBtn.grid(row=0, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        self.GaleriaProcesadaBtn = tk.Button(self.galeria_frame, text="Galería de imágenes procesadas", bg="dark orange", fg="black", command = self.show_gallery_processed_page)
-        self.GaleriaProcesadaBtn.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky="nesw")
+        self.CrearMisionStBtn = tk.Button(self.galeria_frame, text="Crear misión stitching", bg="dark orange", fg="black")
+        self.CrearMisionStBtn.grid(row=0, column=1, columnspan=1, padx=5, pady=3, sticky="nesw")
+
+        self.StOpenCVBtn = tk.Button(self.galeria_frame, text="Stitching OpenCV", bg="dark orange", fg="black", command= self.show_stitched_image)
+        self.StOpenCVBtn.grid(row=1, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
+
+        self.StSIFTBtn = tk.Button(self.galeria_frame, text="Stitching SIFT", bg="dark orange", fg="black")
+        self.StSIFTBtn.grid(row=1, column=1, columnspan=1, padx=5, pady=3, sticky="nesw")
 
         self.map_frame = self.MapFrame
 
@@ -246,8 +262,8 @@ class MapFrameClass:
         threading.Thread(target=takeoff_procedure, daemon=True).start()
 
     def RTL(self):
-        if self.dron.going:
-            self.dron.stopGo()
+        #if self.dron.going:
+        #    self.dron.stopGo()
         self.RTL_active = True
 
         # llamo en modo no bloqueante y le indico qué función debe activar al acabar la operación, y qué parámetro debe usar
@@ -567,6 +583,65 @@ class MapFrameClass:
 
         #messagebox.showinfo("Misión Cumplida", '¡Misión cumplida!')
 
+
+    # ====== IMAGE STITCHING OPENCV =======
+    def show_stitched_image(self):
+        if self.nombre_mision == "":
+            messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
+            return None
+
+        image_directory = f"photos/{self.nombre_mision}"
+        if not os.path.exists(image_directory):
+            messagebox.showerror("Misión sin imágenes", "La misión seleccionada no tiene imágenes.")
+            return None
+
+        image_directory = f"photos/{self.nombre_mision}"
+        if not os.path.exists(image_directory):
+            messagebox.showerror("Error", f"El directorio {image_directory} no existe.")
+            return
+
+        images = [cv2.imread(os.path.join(image_directory, f)) for f in os.listdir(image_directory)
+                  if f.endswith(('.png', '.jpg', '.jpeg', '.bmp', '.JPG'))]
+
+        images = [img for img in images if img is not None]
+
+        if len(images) < 2:
+            messagebox.showerror("Error", "Se necesitan al menos dos imágenes para hacer el stitching.")
+            return
+
+        stitcher = cv2.Stitcher.create()
+        status, stitched = stitcher.stitch(images)
+
+        if status != cv2.Stitcher_OK:
+            messagebox.showerror("Error", "No se pudo hacer el stitching de las imágenes.")
+            return
+
+        stitched = cv2.cvtColor(stitched, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
+        stitched_pil = Image.fromarray(stitched)
+        stitched_pil = stitched_pil.resize((800, 600), Image.Resampling.LANCZOS)
+        stitched_photo = ImageTk.PhotoImage(stitched_pil)
+
+
+        if self.map_frame:
+            self.map_frame.grid_forget()
+
+        self.stitch_frame = tk.Frame(self.MapFrame)
+        self.stitch_frame.grid(row=0, column=0, columnspan=16, padx=5, pady=5, sticky="nsew")
+
+        self.stitch_frame.rowconfigure(0, weight=0)
+        self.stitch_frame.rowconfigure(1, weight=10)
+        self.stitch_frame.columnconfigure(0, weight=1)
+        self.stitch_frame.columnconfigure(1, weight=10)
+        self.stitch_frame.columnconfigure(2, weight=1)
+
+        img_label = tk.Label(self.stitch_frame, image=stitched_photo)
+        img_label.image = stitched_photo
+        img_label.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
+
+        back_button = tk.Button(self.stitch_frame, text="Volver", bg="dark orange", fg="black",
+                                command=self.show_main_page)
+        back_button.grid(row=0, column=1, padx=20, pady=10, sticky="nsew")
+
     # ====== GALERIA MISION ======
     def show_gallery_page(self):
         if self.nombre_mision == "":
@@ -582,7 +657,7 @@ class MapFrameClass:
             self.map_frame.grid_forget()
 
         self.gallery_frame = tk.Frame(self.MapFrame)
-        self.gallery_frame.grid(row=0, column=0, columnspan=15, padx=5, pady=5, sticky="nsew")
+        self.gallery_frame.grid(row=0, column=0, columnspan=16, padx=5, pady=5, sticky="nsew")
 
         self.gallery_frame.rowconfigure(0, weight=0)
         self.gallery_frame.rowconfigure(1, weight=10)
@@ -596,7 +671,7 @@ class MapFrameClass:
             messagebox.showerror("Error", f"El directorio {image_directory} no existe.")
             return
 
-        images = [f for f in os.listdir(image_directory) if f.endswith(('.png', '.jpg', '.jpeg', '.bmp'))]
+        images = [f for f in os.listdir(image_directory) if f.endswith(('.png', '.jpg', '.jpeg', '.bmp', '.JPG'))]
 
         self.current_image_index = 0
         self.img_labels = []
@@ -654,7 +729,7 @@ class MapFrameClass:
             self.map_frame.grid_forget()
 
         self.gallery_processed_frame = tk.Frame(self.MapFrame)
-        self.gallery_processed_frame.grid(row=0, column=0, columnspan=15, padx=5, pady=5, sticky="nsew")
+        self.gallery_processed_frame.grid(row=0, column=0, columnspan=16, padx=5, pady=5, sticky="nsew")
         self.gallery_processed_frame.rowconfigure(0, weight=0)
         self.gallery_processed_frame.rowconfigure(1, weight=10)
 
@@ -662,7 +737,7 @@ class MapFrameClass:
         self.gallery_processed_frame.columnconfigure(1, weight=10)
         self.gallery_processed_frame.columnconfigure(2, weight=1)
 
-        images = [f for f in os.listdir(image_directory) if f.endswith(('.png', '.jpg', '.jpeg', '.bmp'))]
+        images = [f for f in os.listdir(image_directory) if f.endswith(('.png', '.jpg', '.jpeg', '.bmp', '.JPG'))]
         self.current_image_index = 0
         self.img_labels = []
 
@@ -742,13 +817,71 @@ class MapFrameClass:
             self.gallery_frame.grid_forget()
         if self.gallery_processed_frame:
             self.gallery_processed_frame.grid_forget()
+        if self.stitch_frame:
+            self.stitch_frame.grid_forget()
+
+    # ======== INICIAR JUEGO ========
+    def iniciar_juego(self):
+        self.cam_window = tk.Toplevel(self.MapFrame)
+        self.cam_window.title("Detección de Objetos")
+        self.cam_window.geometry("700x500")
+
+        self.video_frame = tk.Frame(self.cam_window)
+        self.video_frame.pack(fill="both", expand=True)
+
+        self.video_label = tk.Label(self.video_frame)
+        self.video_label.pack(padx=10, pady=10)
+
+        self.cap = cv2.VideoCapture(0)
+        self.update_frame()
+
+        self.cam_window.protocol("WM_DELETE_WINDOW", self.close_camera)
+
+    def update_frame(self):
+        ret, frame = self.cap.read()
+        if ret:
+            results = self.model.predict(source=frame, save=False, classes=[1, 11, 38, 46, 74]) # Bicicleta, Stop sign, Raqueta, Plátano, Reloj
+            annotated_frame = results[0].plot()
+            annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(annotated_frame)
+            imgtk = ImageTk.PhotoImage(image=img)
+            self.video_label.imgtk = imgtk
+            self.video_label.config(image=imgtk)
+
+            self.detected_objects = [int(box.cls[0]) for box in results[0].boxes]
+
+            if 1 in self.detected_objects: # Bicicleta
+                self.MapFrame.update_idletasks()
+                self.dron.go("North")
+            if 11 in self.detected_objects: # Stop sign
+                self.MapFrame.update_idletasks()
+                self.RTL()
+                self.close_camera()
+            if 38 in self.detected_objects: # Raqueta
+                self.MapFrame.update_idletasks()
+                self.dron.go("South")
+            if 46 in self.detected_objects: # Plátano
+                self.MapFrame.update_idletasks()
+                self.dron.go("West")
+            if 74 in self.detected_objects: # Reloj
+                self.MapFrame.update_idletasks()
+                self.dron.go("East")
+
+        if self.cap:
+            self.video_label.after(10, self.update_frame)
+
+    def close_camera(self):
+        if self.cap:
+            self.cap.release()
+            self.cap = None
+        self.cam_window.destroy()
 
     # ====== FUNCIONALIDADES ======
-    def activar_camara(self):
-        show_camera_video(self.MapFrame)
+    #def activar_camara(self):
+    #    show_camera_video(self.MapFrame)
 
-    def activar_ObjRecognition(self):
-        show_camera_recognition(self.MapFrame)
+    #def activar_ObjRecognition(self):
+    #    show_camera_recognition(self.MapFrame)
 
 
 
