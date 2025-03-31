@@ -11,6 +11,7 @@ from pymavlink import mavutil
 from PIL import Image, ImageTk, ImageGrab
 from CamaraVideo import *
 from ObjectRecognition import *
+from StitchingMission import *
 from CreadorMisiones import *
 import io
 import threading
@@ -222,7 +223,7 @@ class MapFrameClass:
         self.GaleriaBtn = tk.Button(self.galeria_frame, text="Galería imágenes", bg="dark orange", fg="black", command=self.show_gallery_page)
         self.GaleriaBtn.grid(row=0, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        self.CrearMisionStBtn = tk.Button(self.galeria_frame, text="Crear misión stitching", bg="dark orange", fg="black")
+        self.CrearMisionStBtn = tk.Button(self.galeria_frame, text="Crear misión stitching", bg="dark orange", fg="black", command=self.show_mission_stitching)
         self.CrearMisionStBtn.grid(row=0, column=1, columnspan=1, padx=5, pady=3, sticky="nesw")
 
         self.StOpenCVBtn = tk.Button(self.galeria_frame, text="Stitching OpenCV", bg="dark orange", fg="black", command= self.show_stitched_image)
@@ -445,6 +446,17 @@ class MapFrameClass:
         map_mission_class = MapMission(self.dron, self.altura_vuelo)
         map_frame = map_mission_class.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
+
+    # ====== CREADOR MISIONES STITCHING ======
+    def show_mission_stitching(self):
+        map_window = tk.Toplevel()
+        map_window.title("Creador de Misiones")
+        map_window.geometry("300x150")
+
+        map_mission_stiching = StitchingMission(self.dron, self.altura_vuelo)
+        map_frame = map_mission_stiching.buildFrame(map_window)
+        map_frame.pack(fill="both", expand=True)
+
     # ====== SELECCIONAR MISION ======
     def select_mission(self):
         mission_path = filedialog.askopenfilename(
@@ -563,10 +575,9 @@ class MapFrameClass:
         if mission is None:
             return
 
-        mission['speed'] = 1 # Cambio velocidad a 1
+        #mission['speed'] = 1
 
         self.dron.uploadMission(mission, blocking=False)
-
         messagebox.showinfo("Inicio Misión", '¡Comienza la misión!')
 
         if not self.dron.sendTelemetryInfo:

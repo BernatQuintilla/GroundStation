@@ -5,8 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="56ee8b3b-2adc-4a1e-b189-11760bafa3fc" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/StitchingMission.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/photos/prueba/v1.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/photos/prueba/v2.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/photos/prueba/v3.jpg" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CreadorMisiones.py" beforeDir="false" afterPath="$PROJECT_DIR$/CreadorMisiones.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MapInterface.py" beforeDir="false" afterPath="$PROJECT_DIR$/MapInterface.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250324_170731.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/photos/mission/photo_20250324_170731.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250324_170745.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/photos/mission/photo_20250324_170745.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250324_170805.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/photos/mission/photo_20250324_170805.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250324_170824.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/photos/mission/photo_20250324_170824.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250324_170840.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/photos/mission/photo_20250324_170840.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/prueba/Stitching1.JPG" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/prueba/Stitching2.JPG" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,6 +52,7 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Usuario\Documents\GitHub\EstacionDeTierra\photos\prueba" />
       <recent name="C:\Users\Usuario\Documents\GitHub\EstacionDeTierra\COLMAP" />
     </key>
   </component>

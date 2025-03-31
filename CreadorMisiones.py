@@ -298,6 +298,7 @@ class MapMission:
                 print(f"Carpeta '{photos_folder}' eliminada.")
 
         mission = {
+            "speed": 1,
             "takeOffAlt": self.altura_vuelo,
             "waypoints": [{"lat": wp["lat"], "lon": wp["lon"], "alt": self.altura_vuelo} for wp in self.waypoints]
         }
