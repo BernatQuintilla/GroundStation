@@ -13,6 +13,7 @@ from CamaraVideo import *
 from ObjectRecognition import *
 from StitchingMission import *
 from CreadorMisiones import *
+from ManualStitching import *
 import io
 import threading
 import cv2
@@ -229,7 +230,7 @@ class MapFrameClass:
         self.StOpenCVBtn = tk.Button(self.galeria_frame, text="Stitching OpenCV", bg="dark orange", fg="black", command= self.show_stitched_image)
         self.StOpenCVBtn.grid(row=1, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        self.StSIFTBtn = tk.Button(self.galeria_frame, text="Stitching SIFT", bg="dark orange", fg="black")
+        self.StSIFTBtn = tk.Button(self.galeria_frame, text="Stitching SIFT", bg="dark orange", fg="black", command= self.show_manual_stitched_image)
         self.StSIFTBtn.grid(row=1, column=1, columnspan=1, padx=5, pady=3, sticky="nesw")
 
         self.map_frame = self.MapFrame
@@ -594,7 +595,6 @@ class MapFrameClass:
 
         #messagebox.showinfo("Misión Cumplida", '¡Misión cumplida!')
 
-
     # ====== IMAGE STITCHING OPENCV =======
     def show_stitched_image(self):
         if self.nombre_mision == "":
@@ -652,6 +652,12 @@ class MapFrameClass:
         back_button = tk.Button(self.stitch_frame, text="Volver", bg="dark orange", fg="black",
                                 command=self.show_main_page)
         back_button.grid(row=0, column=1, padx=20, pady=10, sticky="nsew")
+
+    # ====== IMAGE STITCHING MANUAL =======
+    def show_manual_stitched_image(self):
+        stitchingmanual = ManualImageStitching(self.nombre_mision, self.MapFrame)
+        stitchingmanual.show_manual_stitched_image()
+        return
 
     # ====== GALERIA MISION ======
     def show_gallery_page(self):

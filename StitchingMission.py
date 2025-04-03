@@ -17,19 +17,7 @@ from geopy.distance import geodesic
 class StitchingMission:
     def __init__(self, dron, altura_vuelo):
         self.dron = dron
-        self.altura = 0
         self.altura_vuelo = altura_vuelo
-
-        # Iconos del dron y markers
-        self.drone_marker = None
-        self.marker = False  # Para activar el marker (en forma de icono de dron)
-        self.icon = Image.open("assets/drone.png")
-        self.resized_icon = self.icon.resize((50, 50), Image.LANCZOS)
-        self.photo = ImageTk.PhotoImage(self.resized_icon)
-
-        self.marker_photo = Image.open("assets/marker_icon.png")
-        self.resized_marker_icon = self.marker_photo.resize((20, 20), Image.LANCZOS)
-        self.marker_icon = ImageTk.PhotoImage(self.resized_marker_icon)
 
         # Waypoints misión
         self.waypoints = []
