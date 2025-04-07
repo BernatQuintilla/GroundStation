@@ -569,6 +569,13 @@ class MapFrameClass:
             self.dron.changeHeading(self.waypoints_actions['angle'][index])
         if self.waypoints_actions['photo'][index] == 1:
             self.capture_and_save_photo()
+
+        fix_actions = self.waypoints_actions.get('fix', []) # Fix solo se usa en misiones de stitching, este if hace que no de error en misiones normales
+        if index < len(fix_actions):
+            if fix_actions[index] == 1:
+                self.dron.fixHeading()
+            elif fix_actions[index] == 2:
+                self.dron.unfixHeading()
         return
 
     def execute_mission(self):
@@ -858,31 +865,61 @@ class MapFrameClass:
 
     def update_frame(self):
         ret, frame = self.cap.read()
+        porcentaje_recon = 0.3 # Solo se reconocen objetos en recuadro central que ocupa 20% del frame
         if ret:
-            results = self.model.predict(source=frame, save=False, classes=[1, 11, 38, 46, 74]) # Bicicleta, Stop sign, Raqueta, Plátano, Reloj
-            annotated_frame = results[0].plot()
-            annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
-            img = Image.fromarray(annotated_frame)
+            h, w = frame.shape[:2]
+            center_x, center_y = w // 2, h // 2
+            box_w, box_h = int(w * porcentaje_recon), int(h * porcentaje_recon)
+            x1, y1 = center_x - box_w // 2, center_y - box_h // 2
+            x2, y2 = center_x + box_w // 2, center_y + box_h // 2
+
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+            roi = frame[y1:y2, x1:x2].copy()
+
+            results = self.model.predict(source=roi, save=False, classes=[49, 11, 38, 46, 74])  # 54 donut (confunde con reloj a veces)
+
+            if len(results[0].boxes) > 0:
+                for box in results[0].boxes:
+                    box_coords = box.xyxy[0].clone().cpu().numpy()
+
+                    box_coords[0] += x1
+                    box_coords[1] += y1
+                    box_coords[2] += x1
+                    box_coords[3] += y1
+
+                    cv2.rectangle(frame,
+                                  (int(box_coords[0]), int(box_coords[1])),
+                                  (int(box_coords[2]), int(box_coords[3])),
+                                  (255, 0, 0), 2)
+
+                    label = f"{self.model.names[int(box.cls[0])]} {box.conf[0]:.2f}"
+                    cv2.putText(frame, label,
+                                (int(box_coords[0]), int(box_coords[1]) - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(frame)
             imgtk = ImageTk.PhotoImage(image=img)
             self.video_label.imgtk = imgtk
             self.video_label.config(image=imgtk)
 
-            self.detected_objects = [int(box.cls[0]) for box in results[0].boxes]
+            self.detected_objects = [int(box.cls[0]) for box in results[0].boxes] if len(results[0].boxes) > 0 else []
 
-            if 1 in self.detected_objects: # Bicicleta
+            if 49 in self.detected_objects:  # Naranja
                 self.MapFrame.update_idletasks()
                 self.dron.go("North")
-            if 11 in self.detected_objects: # Stop sign
+            if 11 in self.detected_objects:  # Stop sign
                 self.MapFrame.update_idletasks()
                 self.RTL()
                 self.close_camera()
-            if 38 in self.detected_objects: # Raqueta
+            if 38 in self.detected_objects:  # Raqueta
                 self.MapFrame.update_idletasks()
                 self.dron.go("South")
-            if 46 in self.detected_objects: # Plátano
+            if 46 in self.detected_objects:  # Plátano
                 self.MapFrame.update_idletasks()
                 self.dron.go("West")
-            if 74 in self.detected_objects: # Reloj
+            if 74 in self.detected_objects:  # Reloj
                 self.MapFrame.update_idletasks()
                 self.dron.go("East")
 

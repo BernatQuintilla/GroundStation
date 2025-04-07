@@ -18,6 +18,7 @@ class MapMission:
         # guardamos el objeto de la clase dron con el que estamos controlando el dron
         self.dron = dron
         self.altura = 0
+        self.speed = 1 # Velocidad predeterminada
         self.altura_vuelo = altura_vuelo
         self.geofence_waypoints = []
 
@@ -45,6 +46,7 @@ class MapMission:
         self.wp_actions = {'photo': [],'angle': []}
         self.selected_wp = None
         self.new_direction = "-"
+
 
     def buildFrame(self, fatherFrame):
 
@@ -75,7 +77,7 @@ class MapMission:
 
         # === FRAME ===
         self.frame = tk.LabelFrame(self.MapMission, text="Opciones")
-        self.frame.grid(row=0, column=0, columnspan = 10, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+        self.frame.grid(row=0, column=0, columnspan = 5, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
 
         self.frame.rowconfigure(0, weight=2)
         self.frame.rowconfigure(1, weight=2)
@@ -110,6 +112,33 @@ class MapMission:
 
         self.delete_wp_button = tk.Button(self.wp_frame, text="Cambiar Ángulo en WP", command=self.change_angle_waypoint)
         self.delete_wp_button.grid(row=2, column=0, padx=5, pady=2, sticky="ew")
+
+        # === Input Velocidad ===
+        self.vel = tk.LabelFrame(self.MapMission, text="Velocidad Misión")
+        self.vel.grid(row=0, column=6, columnspan=4, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+
+        self.vel.rowconfigure(0, weight=2)
+        self.vel.columnconfigure(0, weight=1)
+        self.vel.columnconfigure(1, weight=1)
+
+        self.speed_label = tk.Label(self.vel, text="Velocidad (m/s):")
+        self.speed_label.grid(row=0, column=2, padx=5, pady=3, sticky="w")
+
+        self.speed_entry = tk.Entry(self.vel)
+        self.speed_entry.insert(0, str(self.speed))
+        self.speed_entry.grid(row=0, column=3, padx=5, pady=3, sticky="ew")
+
+        # === Eliminar Misión ===
+        self.el_mision = tk.LabelFrame(self.MapMission, text="Eliminar Misión Existente")
+        self.el_mision.grid(row=0, column=10, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+
+        self.el_mission_name_entry = tk.Entry(self.el_mision)
+        self.el_mission_name_entry.grid(row=0, column=0, padx=5, pady=3, sticky="ew")
+
+        # Botón para eliminar misión
+        self.el_mission_btn = tk.Button(self.el_mision, text="Eliminar", bg="red", fg="white",
+                                          command=self.eliminar_mision)
+        self.el_mission_btn.grid(row=0, column=1, padx=5, pady=3, sticky="nesw")
 
         return self.MapMission
 
@@ -274,6 +303,31 @@ class MapMission:
                                f"WP {wp_index + 1} - Foto: {'Sí' if self.wp_actions['photo'][wp_index] == 1 else 'No'} - Ángulo: ( {self.new_direction} )")
         return
 
+    # ===== ELIMINAR MISIÓN =====
+    def eliminar_mision(self):
+
+        nombre_mision = self.el_mission_name_entry.get().strip()
+
+        mission_path = os.path.join("missions", f"{nombre_mision}.json")
+        wp_actions_path = os.path.join("waypoints", f"{nombre_mision}.json")
+        photos_path = os.path.join("photos", nombre_mision)
+        if not os.path.exists(mission_path):
+            messagebox.showerror("Error", f"No existe la misión especificada.")
+            return
+
+        if os.path.exists(mission_path):
+            os.remove(mission_path)
+
+        if os.path.exists(wp_actions_path):
+            os.remove(wp_actions_path)
+
+        if os.path.exists(photos_path):
+            shutil.rmtree(photos_path)
+
+        messagebox.showinfo("Misión Eliminada", f"Misión '{nombre_mision}' eliminada correctamente.")
+
+        self.el_mission_name_entry.delete(0, tk.END)  # Borra el texto de la entrada
+
     # ===== GUARDAR MISIÓN ======
     def save_mission(self):
         mission_name = self.mission_name_entry.get().strip()
@@ -283,6 +337,11 @@ class MapMission:
             return
         if not self.waypoints:
             messagebox.showerror("No hay Waypoints", "Por favor, añade waypoints antes de guardar la misión.")
+            return
+        try:
+            self.speed = float(self.speed_entry.get())
+        except ValueError:
+            messagebox.showerror("Velocidad inválida", "Por favor, introduce un número válido para la velocidad.")
             return
 
         mission_folder = "missions"
@@ -298,7 +357,7 @@ class MapMission:
                 print(f"Carpeta '{photos_folder}' eliminada.")
 
         mission = {
-            "speed": 1,
+            "speed": self.speed,
             "takeOffAlt": self.altura_vuelo,
             "waypoints": [{"lat": wp["lat"], "lon": wp["lon"], "alt": self.altura_vuelo} for wp in self.waypoints]
         }

@@ -17,7 +17,6 @@ class ManualImageStitching:
         self.MapFrame = MapFrame
 
     def load_images(self):
-        """Load all images from the mission folder in BGR and convert to RGB"""
         images = []
         for filename in sorted(os.listdir(self.path)):
             if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
@@ -26,21 +25,17 @@ class ManualImageStitching:
         return images
 
     def rgb2gray(self, rgb):
-        """Convert RGB image to grayscale using OpenCV"""
         return cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
 
     def detect_and_compute(self, image):
-        """Detect keypoints and descriptors with SIFT"""
         sift = cv2.SIFT_create(3000)
         return sift.detectAndCompute(image, None)
 
     def match_features(self, des1, des2):
-        """BFMatcher with L2 norm and crossCheck"""
         bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
         return bf.match(des1, des2)
 
     def DLT_homography(self, points1, points2):
-        """Direct Linear Transform"""
         A = []
         for i in range(points1.shape[1]):
             x, y, _ = points1[:, i]
@@ -53,7 +48,6 @@ class ManualImageStitching:
         return H / H[2, 2]
 
     def find_homography_inliers(self, H, points1, points2, th):
-        """Finds the inliers between two sets of points using a homography matrix"""
         try:
             transformed = np.dot(H, points1)
             transformed /= transformed[2]
@@ -63,12 +57,11 @@ class ManualImageStitching:
             return np.empty(0)
 
     def Ransac_DLT_homography_adaptive_loop(self, points1, points2, th=4, p=0.99):
-        """RANSAC implementation with adaptive loop"""
         Ncoords, Npts = points1.shape
         s = 4
         best_inliers = np.empty(1)
         it = 0
-        N_trials = 10000  # Initial value
+        N_trials = 10000
 
         while it < N_trials:
             indices = random.sample(range(Npts), s)
@@ -86,7 +79,6 @@ class ManualImageStitching:
         return H, best_inliers
 
     def calculate_corners(self, img, H):
-        """Calculate the corners needed for the mosaic based on the image and homography"""
         h, w = img.shape[:2]
         corners = np.array([
             [0, 0, 1],
@@ -106,7 +98,6 @@ class ManualImageStitching:
         return [x_min, x_max, y_min, y_max]
 
     def apply_H_fixed_image_size(self, img, H, corners):
-        """Image warping with fixed size"""
         x_min, x_max, y_min, y_max = corners
         out_size = (int(x_max - x_min), int(y_max - y_min))
         T = np.array([[1, 0, -x_min], [0, 1, -y_min], [0, 0, 1]])
@@ -116,11 +107,9 @@ class ManualImageStitching:
         return warped
 
     def stitch_images(self):
-        """Stitch multiple images together with improved blending"""
         if len(self.images) < 2:
             return self.images[0] if self.images else None
 
-        # Start with the first image
         current_mosaic = self.images[0].astype(np.float32)
         current_H = np.eye(3)
         weights = np.ones(current_mosaic.shape[:2], dtype=np.float32)
@@ -128,12 +117,10 @@ class ManualImageStitching:
         for i in range(1, len(self.images)):
             print(f"Stitching image {i + 1}/{len(self.images)}")
 
-            # Detect features and match
             kp1, des1 = self.detect_and_compute(self.gray_images[i - 1])
             kp2, des2 = self.detect_and_compute(self.gray_images[i])
             matches = self.match_features(des1, des2)
 
-            # Convert matches to points
             points1, points2 = [], []
             for m in matches:
                 points1.append([kp1[m.queryIdx].pt[0], kp1[m.queryIdx].pt[1], 1])
@@ -142,16 +129,13 @@ class ManualImageStitching:
             points1 = np.array(points1).T
             points2 = np.array(points2).T
 
-            # Compute homography between current pair
             H, _ = self.Ransac_DLT_homography_adaptive_loop(points1, points2, th=4)
             current_H = H @ current_H
 
-            # Calculate corners for the new mosaic
             corners = self.calculate_corners(self.images[i], current_H)
             x_min, x_max, y_min, y_max = corners
             out_size = (int(x_max - x_min), int(y_max - y_min))
 
-            # Warp the current mosaic and weights
             T = np.array([[1, 0, -x_min], [0, 1, -y_min], [0, 0, 1]])
             mosaic_warped = cv2.warpPerspective(current_mosaic, T.dot(current_H), out_size,
                                                 flags=cv2.INTER_LINEAR)
@@ -160,7 +144,6 @@ class ManualImageStitching:
                                                  borderMode=cv2.BORDER_CONSTANT,
                                                  borderValue=0)
 
-            # Warp the new image
             img_warped = cv2.warpPerspective(self.images[i].astype(np.float32),
                                              T.dot(np.eye(3)), out_size,
                                              flags=cv2.INTER_LINEAR)
@@ -170,21 +153,19 @@ class ManualImageStitching:
                                               borderMode=cv2.BORDER_CONSTANT,
                                               borderValue=0)
 
-            # Blend using weighted average
             total_weights = weights_warped + img_weights
-            total_weights[total_weights == 0] = 1  # Avoid division by zero
+            total_weights[total_weights == 0] = 1
 
             current_mosaic = ((mosaic_warped * weights_warped[..., np.newaxis] +
                                img_warped * img_weights[..., np.newaxis]) /
                               total_weights[..., np.newaxis])
 
             weights = weights_warped + img_weights
-            current_H = np.eye(3)  # Reset for next iteration
+            current_H = np.eye(3)
 
         return np.clip(current_mosaic, 0, 255).astype(np.uint8)
 
     def show_manual_stitched_image(self):
-        """EXACT original show_manual_stitched_image function"""
         if self.nombre_mision == "":
             messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
             return

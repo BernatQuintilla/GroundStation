@@ -5,18 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="56ee8b3b-2adc-4a1e-b189-11760bafa3fc" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/ManualStitching.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CreadorMisiones.py" beforeDir="false" afterPath="$PROJECT_DIR$/CreadorMisiones.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ManualStitching.py" beforeDir="false" afterPath="$PROJECT_DIR$/ManualStitching.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MapInterface.py" beforeDir="false" afterPath="$PROJECT_DIR$/MapInterface.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/StitchingMission.py" beforeDir="false" afterPath="$PROJECT_DIR$/StitchingMission.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250324_170731.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250324_170745.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250324_170805.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250324_170824.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250324_170840.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/photos/mission/photo_20250324_170840.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/photos/prueba/v1.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/photos/prueba/v2.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/photos/prueba/v3.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/missions/mission.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250324170841.JPG" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/photos/mission/photo_20250324_170840.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/waypoints/mission.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

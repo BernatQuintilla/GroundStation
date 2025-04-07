@@ -22,7 +22,7 @@ class StitchingMission:
         # Waypoints misión
         self.waypoints = []
         self.angles = []
-        self.wp_actions = {'photo': [],'angle': []}
+        self.wp_actions = {'photo': [],'angle': [], 'fix': []}
         self.solapamiento = None
         self.mission_name = None
         self.tipo_mission = None
@@ -105,41 +105,141 @@ class StitchingMission:
         num_waypoints4 = int(total_distance4 / step_distance) + 1
 
         # Primer lado
+        #for i in range(num_waypoints + 1):
+        #    fraction = i / num_waypoints
+        #    lat = start_lat + fraction * (end_lat - start_lat)
+        #    lon = start_lon + fraction * (end_lon - start_lon)
+        #    if lat == end_lat and lon == end_lon and self.tipo_mission != "I":
+        #        waypoints.append({"lat": lat, "lon": lon})
+        #        self.wp_actions['photo'].append(1)
+        #        self.wp_actions['angle'].append(115.55)
+        #        waypoints.append({"lat": lat, "lon": lon})
+        #        self.wp_actions['photo'].append(1)
+        #        self.wp_actions['angle'].append(162.9)
+        #    else:
+        #        waypoints.append({"lat": lat, "lon": lon})
+        #        self.wp_actions['photo'].append(1)
+        #        self.wp_actions['angle'].append(162.9)
+
         for i in range(num_waypoints + 1):
             fraction = i / num_waypoints
             lat = start_lat + fraction * (end_lat - start_lat)
             lon = start_lon + fraction * (end_lon - start_lon)
-            waypoints.append({"lat": lat, "lon": lon})
-            self.wp_actions['photo'].append(1)
-            self.wp_actions['angle'].append(162.9)
-        # Segundo lado
-        if self.tipo_mission != "I":
-            for i in range(num_waypoints2 + 1):
-                fraction = i / num_waypoints2
-                lat = start_lat2 + fraction * (end_lat2 - start_lat2)
-                lon = start_lon2 + fraction * (end_lon2 - start_lon2)
+
+            if lat == end_lat and lon == end_lon and self.tipo_mission != "I":
                 waypoints.append({"lat": lat, "lon": lon})
                 self.wp_actions['photo'].append(1)
-                self.wp_actions['angle'].append(68.2)
+                self.wp_actions['angle'].append(-1)
+                self.wp_actions['fix'].append(2)
+                waypoints.append({"lat": lat, "lon": lon})
+                self.wp_actions['photo'].append(1)
+                self.wp_actions['angle'].append(115.55)
+                self.wp_actions['fix'].append(0)
+            else:
+                if lat == start_lat and lon == start_lon:
+                    waypoints.append({"lat": lat, "lon": lon})
+                    self.wp_actions['photo'].append(1)
+                    self.wp_actions['angle'].append(162.9)
+                    self.wp_actions['fix'].append(1)
+                else:
+                    waypoints.append({"lat": lat, "lon": lon})
+                    self.wp_actions['photo'].append(1)
+                    self.wp_actions['angle'].append(-1)
+                    self.wp_actions['fix'].append(0)
+
+
+        # Segundo lado
+        #if self.tipo_mission != "I":
+        #    for i in range(num_waypoints2 + 1):
+        #        fraction = i / num_waypoints2
+        #        lat = start_lat2 + fraction * (end_lat2 - start_lat2)
+        #        lon = start_lon2 + fraction * (end_lon2 - start_lon2)
+        #        if lat == end_lat2 and lon == end_lon2 and self.tipo_mission != "L":
+        #            waypoints.append({"lat": lat, "lon": lon})
+        #            self.wp_actions['photo'].append(1)
+        #            self.wp_actions['angle'].append(25.2)
+        #            waypoints.append({"lat": lat, "lon": lon})
+        #            self.wp_actions['photo'].append(1)
+        #            self.wp_actions['angle'].append(68.2)
+        #        else:
+        #            waypoints.append({"lat": lat, "lon": lon})
+        #            self.wp_actions['photo'].append(1)
+        #            self.wp_actions['angle'].append(68.2)
+        if self.tipo_mission != "I":
+           for i in range(num_waypoints2 + 1):
+               fraction = i / num_waypoints2
+               lat = start_lat2 + fraction * (end_lat2 - start_lat2)
+               lon = start_lon2 + fraction * (end_lon2 - start_lon2)
+               if lat == end_lat2 and lon == end_lon2 and self.tipo_mission != "L":
+                   waypoints.append({"lat": lat, "lon": lon})
+                   self.wp_actions['photo'].append(1)
+                   self.wp_actions['angle'].append(-1)
+                   self.wp_actions['fix'].append(2)
+                   waypoints.append({"lat": lat, "lon": lon})
+                   self.wp_actions['photo'].append(1)
+                   self.wp_actions['angle'].append(25.2)
+                   self.wp_actions['fix'].append(0)
+               else:
+                   if lat == start_lat2 and lon == start_lon2:
+                       waypoints.append({"lat": lat, "lon": lon})
+                       self.wp_actions['photo'].append(1)
+                       self.wp_actions['angle'].append(68.2)
+                       self.wp_actions['fix'].append(1)
+                   else:
+                       waypoints.append({"lat": lat, "lon": lon})
+                       self.wp_actions['photo'].append(1)
+                       self.wp_actions['angle'].append(-1)
+                       self.wp_actions['fix'].append(0)
+
         # Tercer lado
         if self.tipo_mission == "U" or self.tipo_mission == "O":
             for i in range(num_waypoints3 + 1):
                 fraction = i / num_waypoints3
                 lat = start_lat3 + fraction * (end_lat3 - start_lat3)
                 lon = start_lon3 + fraction * (end_lon3 - start_lon3)
-                waypoints.append({"lat": lat, "lon": lon})
-                self.wp_actions['photo'].append(1)
-                self.wp_actions['angle'].append(342.2)
+                if lat == end_lat3 and lon == end_lon3 and self.tipo_mission == "O":
+                    waypoints.append({"lat": lat, "lon": lon})
+                    self.wp_actions['photo'].append(1)
+                    self.wp_actions['angle'].append(-1)
+                    self.wp_actions['fix'].append(2)
+                    waypoints.append({"lat": lat, "lon": lon})
+                    self.wp_actions['photo'].append(1)
+                    self.wp_actions['angle'].append(294.85)
+                    self.wp_actions['fix'].append(0)
+                else:
+                    if lat == start_lat3 and lon == start_lon3:
+                        waypoints.append({"lat": lat, "lon": lon})
+                        self.wp_actions['photo'].append(1)
+                        self.wp_actions['angle'].append(342.2)
+                        self.wp_actions['fix'].append(1)
+                    else:
+                        waypoints.append({"lat": lat, "lon": lon})
+                        self.wp_actions['photo'].append(1)
+                        self.wp_actions['angle'].append(-1)
+                        self.wp_actions['fix'].append(0)
+
         # Cuarto lado
         if self.tipo_mission == "O":
             for i in range(num_waypoints4 + 1):
                 fraction = i / num_waypoints4
                 lat = start_lat4 + fraction * (end_lat4 - start_lat4)
                 lon = start_lon4 + fraction * (end_lon4 - start_lon4)
-                waypoints.append({"lat": lat, "lon": lon})
-                self.wp_actions['photo'].append(1)
-                self.wp_actions['angle'].append(247.5)
-
+                if lat == start_lat4 and lon == start_lon4:
+                    waypoints.append({"lat": lat, "lon": lon})
+                    self.wp_actions['photo'].append(1)
+                    self.wp_actions['angle'].append(247.5)
+                    self.wp_actions['fix'].append(1)
+                else:
+                    if lat == end_lat4 and lon == end_lon4:
+                        waypoints.append({"lat": lat, "lon": lon})
+                        self.wp_actions['photo'].append(1)
+                        self.wp_actions['angle'].append(-1)
+                        self.wp_actions['fix'].append(2)
+                    else:
+                        waypoints.append({"lat": lat, "lon": lon})
+                        self.wp_actions['photo'].append(1)
+                        self.wp_actions['angle'].append(-1)
+                        self.wp_actions['fix'].append(0)
         return waypoints
 
     def save_mission(self):
