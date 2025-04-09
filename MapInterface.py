@@ -877,7 +877,7 @@ class MapFrameClass:
 
             roi = frame[y1:y2, x1:x2].copy()
 
-            results = self.model.predict(source=roi, save=False, classes=[49, 11, 38, 46, 74])  # 54 donut (confunde con reloj a veces)
+            results = self.model.predict(source=roi, save=False, classes=[51, 11, 38, 46, 74])
 
             if len(results[0].boxes) > 0:
                 for box in results[0].boxes:
@@ -906,7 +906,7 @@ class MapFrameClass:
 
             self.detected_objects = [int(box.cls[0]) for box in results[0].boxes] if len(results[0].boxes) > 0 else []
 
-            if 49 in self.detected_objects:  # Naranja
+            if 51 in self.detected_objects:  # Zanahoria
                 self.MapFrame.update_idletasks()
                 self.dron.go("North")
             if 11 in self.detected_objects:  # Stop sign
