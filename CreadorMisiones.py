@@ -14,11 +14,11 @@ import shutil
 
 class MapMission:
 
-    def __init__(self, dron, altura_vuelo):
+    def __init__(self, dron, altura_vuelo, velocidad_vuelo):
         # guardamos el objeto de la clase dron con el que estamos controlando el dron
         self.dron = dron
         self.altura = 0
-        self.speed = 1 # Velocidad predeterminada
+        self.speed = velocidad_vuelo
         self.altura_vuelo = altura_vuelo
         self.geofence_waypoints = []
 

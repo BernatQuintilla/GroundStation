@@ -32,14 +32,16 @@ class MapFrameClass:
         # guardamos el objeto de la clase dron con el que estamos controlando el dron
         self.dron = dron
         self.altura = 0
+        self.heading = 0
         self.altura_vuelo = 5
-        self.dron.navSpeed = 0.5
+        self.dron.navSpeed = 1
         # atributos necesarios para crear el geofence
         self.vertex_count = 4
 
         # atributos para establecer el trazado del dron
-        self.trace = False
-        self.last_position = None  # actualizar trazado
+        #self.trace = False
+        #self.marker = False
+        #self.last_position = None
 
         # Cargamos los tres iconos
         self.RTL_active = False
@@ -57,7 +59,6 @@ class MapFrameClass:
 
         # Iconos del dron y markers
         self.drone_marker = None
-        self.marker = False  # Para activar el marker (en forma de icono de dron)
         self.icon = Image.open("assets/drone.png")
         self.resized_icon = self.icon.resize((50, 50), Image.LANCZOS)
         self.photo = ImageTk.PhotoImage(self.resized_icon)
@@ -81,9 +82,17 @@ class MapFrameClass:
         self.model = YOLO("models/yolov8n.pt")
 
         # Reconocimiento Objetos
-        self.cap = None
         self.video_label = None
         self.detected_objects = []
+
+        # Variables para cambiar producción y simulación (simulación en predeterminado)
+        self.tipo_conexión = "simulación"
+        self.camara_input = 0
+        self.connection_string = 'tcp:127.0.0.1:5763'
+        self.baud = 115200
+
+        # Abrimos cámara
+        self.cap = None
 
     # ======== BUILD FRAME ========
     def buildFrame(self, fatherFrame):
@@ -91,8 +100,8 @@ class MapFrameClass:
         self.MapFrame = tk.Frame(fatherFrame)  # create new frame where the map will be allocated
 
         # creamos el widget para el mapa
-        self.map_widget = tkintermapview.TkinterMapView(self.MapFrame, width=1000, height=600, corner_radius=0)
-        self.map_widget.grid(row=1, column=0, columnspan=16, padx=5, pady=5)
+        self.map_widget = tkintermapview.TkinterMapView(self.MapFrame, width=850, height=600, corner_radius=0)
+        self.map_widget.grid(row=1, column=0, columnspan=10, rowspan=3, padx=5, pady=5)
         # cargamos la imagen del dronlab
         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga",
                                             max_zoom=22)
@@ -105,6 +114,8 @@ class MapFrameClass:
 
         self.MapFrame.rowconfigure(0, weight=1)
         self.MapFrame.rowconfigure(1, weight=10)
+        self.MapFrame.rowconfigure(2, weight=10)
+        self.MapFrame.rowconfigure(3, weight=10)
 
         self.MapFrame.columnconfigure(0, weight=1)
         self.MapFrame.columnconfigure(1, weight=1)
@@ -116,35 +127,69 @@ class MapFrameClass:
         self.MapFrame.columnconfigure(7, weight=1)
         self.MapFrame.columnconfigure(8, weight=1)
         self.MapFrame.columnconfigure(9, weight=1)
+        self.MapFrame.columnconfigure(10, weight=1)
+        self.MapFrame.columnconfigure(11, weight=1)
+        self.MapFrame.columnconfigure(12, weight=1)
+        self.MapFrame.columnconfigure(13, weight=1)
 
         # === FRAME CONTROL ===
         self.control_frame = tk.LabelFrame(self.MapFrame, text="Control")
-        self.control_frame.grid(row=0, column=0, columnspan=2, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+        self.control_frame.grid(row=0, column=0, columnspan=3, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
 
         self.control_frame.rowconfigure(0, weight=2)
         self.control_frame.rowconfigure(1, weight=2)
         self.control_frame.columnconfigure(0, weight=2)
         self.control_frame.columnconfigure(1, weight=2)
+        self.control_frame.columnconfigure(2, weight=2)
 
         self.connectBtn = tk.Button(self.control_frame, text="Conectar", bg="dark orange", fg="black",command=self.connect)
         self.connectBtn.grid(row=0, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
 
         self.despegarBtn = tk.Button(self.control_frame, text="Despegar", bg="dark orange", fg="black",command=self.arm_and_takeOff)
-        self.despegarBtn.grid(row=0, column=1, columnspan=1, padx=5, pady=3, sticky="nesw")
+        self.despegarBtn.grid(row=1, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        self.altura_input = tk.Entry(self.control_frame, width=3)
-        self.altura_input.grid(row=0, column=2,columnspan=1, padx=1, pady=3)
-        self.altura_input.insert(0, str(self.altura_vuelo))
+        #self.altura_input = tk.Entry(self.control_frame, width=3)
+        #self.altura_input.grid(row=0, column=2,columnspan=1, padx=1, pady=3)
+        #self.altura_input.insert(0, str(self.altura_vuelo))
 
         self.RTLBtn = tk.Button(self.control_frame, text="RTL", bg="dark orange", fg="black",command=self.RTL)
-        self.RTLBtn.grid(row=1, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
+        self.RTLBtn.grid(row=1, column=2, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        self.ShowDronBtn = tk.Button(self.control_frame, text="Mostrar dron", bg="black", fg="white", command=self.show_dron)
-        self.ShowDronBtn.grid(row=1, column=1, columnspan = 2, padx=5, pady=3, sticky="nesw")
+        self.LandBtn = tk.Button(self.control_frame, text="Aterrizar", bg="dark orange", fg="black", command=self.dron.Land)
+        self.LandBtn.grid(row=1, column=1, columnspan=1, padx=5, pady=3, sticky="nesw")
+
+        self.CambiarConexionBtn = tk.Button(self.control_frame, text="Cambiar a producción", bg="black", fg="white", command=self.change_connection)
+        self.CambiarConexionBtn.grid(row=0, column=1, columnspan = 2, padx=5, pady=3, sticky="nesw")
+
+        # === FRAME DATOS TELEMETRÍA ===
+        self.tele_frame = tk.LabelFrame(self.MapFrame, text="Datos telemetría")
+        self.tele_frame.grid(row=0, column=3, columnspan=1, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+
+        self.tele_frame.rowconfigure(0, weight=2)
+        self.tele_frame.rowconfigure(1, weight=2)
+        self.tele_frame.columnconfigure(0, weight=2)
+
+        self.AlturaLabel = tk.Label(
+            self.tele_frame,
+            text=f"Altura: {self.altura} m",
+            bg="light gray",
+            fg="black",
+            width=12,
+        )
+        self.AlturaLabel.grid(row=0, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
+
+        self.HeadingLabel = tk.Label(
+            self.tele_frame,
+            text=f"Heading: {self.heading} º",
+            bg="light gray",
+            fg="black",
+            width=12,
+        )
+        self.HeadingLabel.grid(row=1, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
 
         # === FRAME GESTIÓN DE MISIONES ===
         self.mision_frame = tk.LabelFrame(self.MapFrame, text="Gestión de misiones")
-        self.mision_frame.grid(row=0, column=2, columnspan=4, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+        self.mision_frame.grid(row=0, column=4, columnspan=5, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
 
         self.mision_frame.rowconfigure(0, weight=1)
         self.mision_frame.rowconfigure(1, weight=1)
@@ -163,43 +208,15 @@ class MapFrameClass:
         )
         self.MisionLabel.grid(row=0, column=1, columnspan=2, padx=5, pady=3, sticky="nesw")
 
-        #self.AreaBtn = tk.Button(self.mision_frame, text="Crear área de observación", bg="dark orange", fg="black")
-        #self.AreaBtn.grid(row=0, column=1, padx=5, pady=3, sticky="nesw")
-
         self.SelMisionBtn = tk.Button(self.mision_frame, text="Seleccionar misión", bg="dark orange", fg="black", command=self.select_mission)
         self.SelMisionBtn.grid(row=1, column=0, padx=5, pady=3, sticky="nesw")
-
-        #self.mission_dropdown = ttk.Combobox(self.mision_frame, textvariable=self.mission_var, state="readonly")
-        #self.mission_dropdown.grid(row=1, column=0, padx=5, pady=3, sticky="nesw")
-        #self.update_mission_list()
 
         self.EjecutarMisionBtn = tk.Button(self.mision_frame, text="Ejecutar misión", bg="black", fg="white", command = self.execute_mission)
         self.EjecutarMisionBtn.grid(row=1, column=1, padx=5, pady=3, sticky="nesw")
 
-        # === FRAME DATOS TELEMETRÍA ===
-        self.tele_frame = tk.LabelFrame(self.MapFrame, text="Datos telemetría")
-        self.tele_frame.grid(row=0, column=6, columnspan=1, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
-
-        self.tele_frame.rowconfigure(0, weight=2)
-        self.tele_frame.rowconfigure(1, weight=2)
-        self.tele_frame.columnconfigure(0, weight=2)
-
-        self.AlturaLabel = tk.Label(
-            self.tele_frame,
-            text=f"Altura: {self.altura} m",
-            bg="light gray",
-            fg="black",
-            width=12,
-        )
-        self.AlturaLabel.grid(row=0, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
-
-        self.TrazadoBtn = tk.Button(self.tele_frame, text="Activar trazado", bg="black", fg="white",
-                                    command=self.set_trace)
-        self.TrazadoBtn.grid(row=1, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
-
         # === FRAME DETECCION DE OBJETOS ===
         self.func_frame = tk.LabelFrame(self.MapFrame, text="Detección de objetos")
-        self.func_frame.grid(row=0, column=7, columnspan=3, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+        self.func_frame.grid(row=0, column=9, columnspan=3, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
 
         self.func_frame.rowconfigure(0, weight=2)
         self.func_frame.rowconfigure(1, weight=2)
@@ -233,6 +250,59 @@ class MapFrameClass:
         self.StSIFTBtn = tk.Button(self.galeria_frame, text="Stitching SIFT", bg="dark orange", fg="black", command= self.show_manual_stitched_image)
         self.StSIFTBtn.grid(row=1, column=1, columnspan=1, padx=5, pady=3, sticky="nesw")
 
+        # FRAME PARÁMETROS
+        self.param_frame = tk.LabelFrame(self.MapFrame, text="Editor Parámetros")
+        self.param_frame.grid(row=1, column=11, columnspan=4, rowspan=2, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+        self.param_frame.rowconfigure(0, weight=2)
+        self.param_frame.rowconfigure(1, weight=2)
+        self.param_frame.rowconfigure(2, weight=2)
+        self.param_frame.rowconfigure(3, weight=2)
+        self.param_frame.rowconfigure(4, weight=2)
+        self.param_frame.rowconfigure(5, weight=2)
+        self.param_frame.rowconfigure(6, weight=2)
+        self.param_frame.columnconfigure(0, weight=2)
+        self.param_frame.columnconfigure(1, weight=2)
+
+        self.info_label = tk.Label(self.param_frame, text="Los parámetros seleccionados se utilizarán en los planes de vuelo y acciones de control", fg="black",wraplength=240)
+        self.info_label.grid(row=0, column=0, columnspan=4, padx=5, pady=3, sticky="w")
+
+        self.alt_label = tk.Label(self.param_frame, text="Editar Altura (m):", fg="black")
+        self.alt_label.grid(row=1, column=0, columnspan=4, padx=5, pady=3, sticky="w")
+        self.altura_entry = tk.Entry(self.param_frame)
+        self.altura_entry.grid(row=2, column=0, padx=5, pady=5, sticky="e")
+        self.altura_entry.insert(0, str(self.altura_vuelo))
+        self.altBtn = tk.Button(self.param_frame, text="Aplicar", bg="dark orange", fg="black", command=self.aplicar_altura)
+        self.altBtn.grid(row=2, column=1, columnspan=2, padx=5, pady=3, sticky="nesw")
+
+        self.vel_label = tk.Label(self.param_frame, text="Editar Velocidad (m/s):", fg="black")
+        self.vel_label.grid(row=3, column=0, columnspan=4, padx=5, pady=3, sticky="w")
+        self.velBtn = tk.Button(self.param_frame, text="Aplicar", bg="dark orange", fg="black", command=self.aplicar_velocidad)
+        self.velBtn.grid(row=4, column=1, columnspan=2, padx=5, pady=3, sticky="nesw")
+        self.vel_entry = tk.Entry(self.param_frame)
+        self.vel_entry.grid(row=4, column=0, padx=5, pady=5, sticky="e")
+        self.vel_entry.insert(0, str(self.dron.navSpeed))
+
+        self.geo_label = tk.Label(self.param_frame, text="Editar Geofence:", fg="black")
+        self.geo_label.grid(row=5, column=0, columnspan=4, padx=5, pady=3, sticky="w")
+        self.CrearGeoBtn = tk.Button(self.param_frame, text="Crear Geofence", bg="dark orange", fg="black")
+        self.CrearGeoBtn.grid(row=6, column=0, columnspan = 4, padx=5, pady=3, sticky="nesw")
+
+        # === FRAME VIDEO ===
+        self.camaravideo_frame = tk.LabelFrame(self.MapFrame, text="Cámara dron")
+        self.camaravideo_frame.grid(row=3, column=11, columnspan=4, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+
+        self.camaravideo_frame.config(width=2, height=100)
+        self.camaravideo_frame.grid_propagate(False)
+
+        self.camaravideo_frame.rowconfigure(0, weight=1)
+        self.camaravideo_frame.columnconfigure(0, weight=1)
+        self.camaravideo_frame.columnconfigure(1, weight=1)
+
+        self.video_label = tk.Label(self.camaravideo_frame)
+        self.video_label.grid(row=0, column=0, columnspan=1, padx=5, pady=5, sticky="nsew")
+        self.show_video()
+        self.GuardarFrameBtn = tk.Button(self.camaravideo_frame, text="Guardar Frame", bg="dark orange", fg="black", command=self.capture_and_save_photo)
+        self.GuardarFrameBtn.grid(row=1, column=0, columnspan = 4, padx=5, pady=3, sticky="nesw")
         self.map_frame = self.MapFrame
 
         return self.MapFrame
@@ -240,14 +310,14 @@ class MapFrameClass:
     # ======== FUNCIONES CONTROL ========
     def connect(self):
         # conectamos con el simulador
-        connection_string = 'tcp:127.0.0.1:5763'
-        baud = 115200
-        self.dron.connect(connection_string, baud)
+        self.dron.connect(self.connection_string, self.baud)
         # una vez conectado cambio en color de boton
         self.connectBtn['bg'] = 'green'
         self.connectBtn['fg'] = 'white'
         self.connectBtn['text'] = 'Conectado'
         self.GeoFence()
+        self.show_dron()
+        self.cap = cv2.VideoCapture(self.camara_input)
 
     def arm_and_takeOff(self):
         self.RTL_active = True
@@ -256,7 +326,7 @@ class MapFrameClass:
         # Ajuste para poder mostrar icono en amarillo y botón
         def takeoff_procedure():
             try:
-                self.altura_vuelo = int(self.altura_input.get())
+                #self.altura_vuelo = int(self.altura_input.get())
                 self.dron.arm()
                 self.dron.takeOff(self.altura_vuelo)
             finally:
@@ -303,47 +373,19 @@ class MapFrameClass:
             self.despegarBtn['fg'] = 'black'
             self.despegarBtn['text'] = 'Despegando...'
         if mensaje == "VOLANDO":
-            self.RTL_active = False
             self.despegarBtn['bg'] = 'green'
             self.despegarBtn['fg'] = 'white'
             self.despegarBtn['text'] = 'Volando'
-
-        if mensaje == "TRAZADO_ON":
-            self.TrazadoBtn['bg'] = 'green'
-            self.TrazadoBtn['fg'] = 'white'
-            self.TrazadoBtn['text'] = 'Ocultar trazado'
-
-        if mensaje == "TRAZADO_OFF":
-            self.TrazadoBtn['bg'] = 'black'
-            self.TrazadoBtn['fg'] = 'white'
-            self.TrazadoBtn['text'] = 'Mostrar trazado'
-
-        if mensaje == "DRON_VISIBLE":
-            self.ShowDronBtn['bg'] = 'green'
-            self.ShowDronBtn['fg'] = 'white'
-            self.ShowDronBtn['text'] = 'Ocultar dron'
-
-        if mensaje == "DRON_OCULTO":
-            self.ShowDronBtn['bg'] = 'black'
-            self.ShowDronBtn['fg'] = 'white'
-            self.ShowDronBtn['text'] = 'Mostrar dron'
+        if mensaje == "PRODUCCIÓN":
+            self.CambiarConexionBtn['text'] = 'Cambiar a simulación'
+        if mensaje == "SIMULACIÓN":
+            self.CambiarConexionBtn['text'] = 'Cambiar a producción'
 
     # ======= MOSTRAR Y MODIFICAR ICONO DEL DRON =======
     def show_dron(self):
-        # Muestro el dron o dejo de mostrarlo
-        self.marker = not self.marker
-        if self.marker:
-            self.update_drone_marker(self.initial_lat, self.initial_lon)
-            if not self.dron.sendTelemetryInfo:
-                self.dron.send_telemetry_info(self.process_telemetry_info)
-            self.informar('DRON_VISIBLE')
-        else:
-            # Si hay que quitarlo, lo hago aquí
-            if self.drone_marker:
-                self.map_widget.delete(self.drone_marker)
-            # if not self.trace:
-                #self.dron.stop_sending_telemetry_info()
-            self.informar('DRON_OCULTO')
+        self.update_drone_marker(self.initial_lat, self.initial_lon)
+        if not self.dron.sendTelemetryInfo:
+            self.dron.send_telemetry_info(self.process_telemetry_info)
 
     def rotate_icon(self, icon, angle):
         if icon == self.photo_red:
@@ -388,31 +430,9 @@ class MapFrameClass:
         lon = telemetry_info['lon']
         self.altura = round(telemetry_info['alt'], 2)
         self.AlturaLabel.config(text=f"Altura: {self.altura} m")
-        #print(self.dron.heading)
-        if self.trace:
-            if self.last_position:
-                self.map_widget.set_path([self.last_position, (lat, lon)], width=3)
-            self.last_position = (lat, lon)
-
-        if self.marker:
-            self.update_drone_marker(lat, lon)
-
-    # ======= MARCAR TRAZADO DEL DRON =======
-    def set_trace(self):
-        self.trace = not self.trace
-        if self.TrazadoBtn['bg'] == 'black':
-            self.informar("TRAZADO_ON")
-        elif self.TrazadoBtn['bg'] == 'green':
-            self.informar("TRAZADO_OFF")
-
-        if self.trace:
-            if not self.dron.sendTelemetryInfo:
-                self.dron.send_telemetry_info(self.process_telemetry_info)
-        else:
-            self.map_widget.delete_all_path()
-            self.last_position = []
-            if not self.marker:
-                self.dron.stop_sending_telemetry_info()
+        self.heading = int(round(telemetry_info['heading']))
+        self.HeadingLabel.config(text=f"Heading: {self.heading} º")
+        self.update_drone_marker(lat, lon)
 
     # ====== GEOFENCE =======
     def GeoFence(self):
@@ -438,13 +458,29 @@ class MapFrameClass:
         ]
         self.dron.setParams(parameters)
 
+    # ====== CAMBIAR PRODUCCIÓN SIMULACIÓN ======
+    def change_connection(self):
+        if self.tipo_conexión == "simulación":
+            self.tipo_conexión = "producción"
+            self.camara_input = 1
+            self.connection_string = 'COM3'
+            self.baud = 57600
+            self.informar('PRODUCCIÓN')
+
+        elif self.tipo_conexión == "producción":
+            self.tipo_conexión = "simulación"
+            self.camara_input = 0
+            self.connection_string = 'tcp:127.0.0.1:5763'
+            self.baud = 115200
+            self.informar('SIMULACIÓN')
+
     # ====== CREADOR MISIONES ======
     def show_mission_map(self):
         map_window = tk.Toplevel()
         map_window.title("Creador de Misiones")
         map_window.geometry("920x620")
 
-        map_mission_class = MapMission(self.dron, self.altura_vuelo)
+        map_mission_class = MapMission(self.dron, self.altura_vuelo, self.dron.navSpeed)
         map_frame = map_mission_class.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
 
@@ -538,12 +574,17 @@ class MapFrameClass:
 
     def capture_and_save_photo(self):
         mission_folder = f"photos/{self.nombre_mision}"
+        if self.cap == None:
+            messagebox.showerror("Error", f"Inicia la conexión para poder capurar el frame.")
+        if not self.nombre_mision:
+            messagebox.showerror("Error", f"No hay una misión seleccionada donde guardar el frame.")
+            return
 
         if not os.path.exists(mission_folder):
             os.makedirs(mission_folder)
             print(f"Carpeta '{mission_folder}' creada.")
 
-        cap = cv2.VideoCapture(0)
+        cap = self.cap
 
         if not cap.isOpened():
             print("Error: No se ha podido acceder a la cámara.")
@@ -560,9 +601,6 @@ class MapFrameClass:
 
         else:
             print("Error: Fallo en capturar la foto.")
-
-        cap.release()
-        cv2.destroyAllWindows()
 
     def aqui(self, index, wp):
         if self.waypoints_actions['angle'][index] != -1:
@@ -766,8 +804,7 @@ class MapFrameClass:
         self.img_labels = []
 
         # Diccionario de clases: (https://stackoverflow.com/questions/77477793/class-ids-and-their-relevant-class-names-for-yolov8-model#:~:text=I%20understand%20there%20are%20approximately,object%20detection%20model%20of%20YOLOv8.)
-        class_dict = {0: 'person',1: 'bicycle', 41: 'cup', 46: 'banana', 47: 'apple', 56: 'chair',
-                      67: 'cell phone', 73: 'book', 74: 'clock', 76: 'scissors', 77: 'teddy bear'}
+        class_dict = {0: 'person',1: 'bicycle', 51: 'carrot', 46: 'banana', 38: 'tennis racket', 74: 'clock'}
 
         self.selected_class = tk.IntVar()
         self.selected_class.set(0)
@@ -835,7 +872,6 @@ class MapFrameClass:
                                 command=self.show_main_page)
         back_button.grid(row=0, column=1, padx=20, pady=10, sticky="nsew")
 
-
     def show_main_page(self):
         if self.gallery_frame:
             self.gallery_frame.grid_forget()
@@ -846,8 +882,9 @@ class MapFrameClass:
 
     # ======== INICIAR JUEGO ========
     def iniciar_juego(self):
-        self.arm_and_takeOff()
+        self.stop_show_video()
 
+        self.arm_and_takeOff()
         self.cam_window = tk.Toplevel(self.MapFrame)
         self.cam_window.title("Detección de Objetos")
         self.cam_window.geometry("700x500")
@@ -855,17 +892,16 @@ class MapFrameClass:
         self.video_frame = tk.Frame(self.cam_window)
         self.video_frame.pack(fill="both", expand=True)
 
-        self.video_label = tk.Label(self.video_frame)
-        self.video_label.pack(padx=10, pady=10)
+        self.game_video_label = tk.Label(self.video_frame)
+        self.game_video_label.pack(padx=10, pady=10)
 
-        self.cap = cv2.VideoCapture(0)
         self.update_frame()
 
-        self.cam_window.protocol("WM_DELETE_WINDOW", self.close_camera)
+        self.cam_window.protocol("WM_DELETE_WINDOW", self.close_game_window)
 
     def update_frame(self):
         ret, frame = self.cap.read()
-        porcentaje_recon = 0.3 # Solo se reconocen objetos en recuadro central que ocupa 20% del frame
+        porcentaje_recon = 0.3 # Solo se reconocen objetos en recuadro central que ocupa 30% del frame
         if ret:
             h, w = frame.shape[:2]
             center_x, center_y = w // 2, h // 2
@@ -901,8 +937,8 @@ class MapFrameClass:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(frame)
             imgtk = ImageTk.PhotoImage(image=img)
-            self.video_label.imgtk = imgtk
-            self.video_label.config(image=imgtk)
+            self.game_video_label.imgtk = imgtk
+            self.game_video_label.config(image=imgtk)
 
             self.detected_objects = [int(box.cls[0]) for box in results[0].boxes] if len(results[0].boxes) > 0 else []
 
@@ -912,7 +948,7 @@ class MapFrameClass:
             if 11 in self.detected_objects:  # Stop sign
                 self.MapFrame.update_idletasks()
                 self.RTL()
-                self.close_camera()
+                self.close_game_window()
             if 38 in self.detected_objects:  # Raqueta
                 self.MapFrame.update_idletasks()
                 self.dron.go("South")
@@ -926,11 +962,57 @@ class MapFrameClass:
         if self.cap:
             self.video_label.after(10, self.update_frame)
 
-    def close_camera(self):
-        if self.cap:
-            self.cap.release()
-            self.cap = None
+    # ======== VIDEO CAMARA =======
+    def show_video(self):
+        if self.cap is None:
+            self.video_label.after(30, self.show_video)
+            return
+        ret, frame = self.cap.read()
+        if ret:
+            frame = cv2.resize(frame, (228, 171))
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(frame)
+            imgtk = ImageTk.PhotoImage(image=img)
+            self.video_label.imgtk = imgtk
+            self.video_label.configure(image=imgtk)
+
+        self._video_job = self.video_label.after(30, self.show_video)
+
+    def stop_show_video(self):
+        if hasattr(self, '_video_job'):
+            self.video_label.after_cancel(self._video_job)
+            self._video_job = None
+
+    def close_game_window(self):
         self.cam_window.destroy()
+        self.show_video()
+
+    # ====== PARAMETROS ======
+    def aplicar_altura(self):
+        try:
+            nueva_altura = float(self.altura_entry.get())
+            if nueva_altura <= 0:
+                raise ValueError("La altura debe ser mayor que 0")
+
+            self.altura_vuelo = nueva_altura
+
+        except ValueError as e:
+            messagebox.showerror("Error", f"Dato inválido: {str(e)}")
+            self.altura_entry.delete(0, tk.END)
+            self.altura_entry.insert(0, str(self.altura_vuelo))
+
+    def aplicar_velocidad(self):
+        try:
+            nueva_velocidad = float(self.vel_entry.get())
+            if nueva_velocidad <= 0:
+                raise ValueError("La velocidad debe ser mayor que 0")
+
+            self.dron.navSpeed = nueva_velocidad
+
+        except ValueError as e:
+            messagebox.showerror("Error", f"Dato inválido: {str(e)}")
+            self.vel_entry.delete(0, tk.END)
+            self.vel_entry.insert(0, f"{self.dron.navSpeed:.1f}")
 
     # ====== FUNCIONALIDADES ======
     #def activar_camara(self):
