@@ -15,10 +15,10 @@ from geopy.distance import geodesic
 
 
 class StitchingMission:
-    def __init__(self, dron, altura_vuelo):
+    def __init__(self, dron, altura_vuelo, velocidad_vuelo):
         self.dron = dron
         self.altura_vuelo = altura_vuelo
-
+        self.velocidad_vuelo = velocidad_vuelo
         # Waypoints misión
         self.waypoints = []
         self.angles = []
@@ -286,7 +286,7 @@ class StitchingMission:
                 print(f"Carpeta '{photos_folder}' eliminada.")
 
         mission = {
-            "speed": 7,
+            "speed": self.velocidad_vuelo,
             "takeOffAlt": self.altura_vuelo,
             "waypoints": [{"lat": wp["lat"], "lon": wp["lon"], "alt": self.altura_vuelo} for wp in self.waypoints]
         }

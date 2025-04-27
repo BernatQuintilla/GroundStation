@@ -14,16 +14,15 @@ import shutil
 
 class MapMission:
 
-    def __init__(self, dron, altura_vuelo, velocidad_vuelo):
+    def __init__(self, dron, altura_vuelo, velocidad_vuelo, boolean_geofence):
         # guardamos el objeto de la clase dron con el que estamos controlando el dron
         self.dron = dron
         self.altura = 0
         self.speed = velocidad_vuelo
         self.altura_vuelo = altura_vuelo
         self.geofence_waypoints = []
-
-        # atributos necesarios para crear el geofence
-        self.vertex_count = 4
+        self.geofence_waypoints1 = []
+        self.new_geofence = boolean_geofence
 
         # atributos para establecer el trazado del dron
         self.trace = False
@@ -46,7 +45,6 @@ class MapMission:
         self.wp_actions = {'photo': [],'angle': []}
         self.selected_wp = None
         self.new_direction = "-"
-
 
     def buildFrame(self, fatherFrame):
 
@@ -114,19 +112,19 @@ class MapMission:
         self.delete_wp_button.grid(row=2, column=0, padx=5, pady=2, sticky="ew")
 
         # === Input Velocidad ===
-        self.vel = tk.LabelFrame(self.MapMission, text="Velocidad Misión")
-        self.vel.grid(row=0, column=6, columnspan=4, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
+        #self.vel = tk.LabelFrame(self.MapMission, text="Velocidad Misión")
+        #self.vel.grid(row=0, column=6, columnspan=4, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
 
-        self.vel.rowconfigure(0, weight=2)
-        self.vel.columnconfigure(0, weight=1)
-        self.vel.columnconfigure(1, weight=1)
+        #self.vel.rowconfigure(0, weight=2)
+        #self.vel.columnconfigure(0, weight=1)
+        #self.vel.columnconfigure(1, weight=1)
 
-        self.speed_label = tk.Label(self.vel, text="Velocidad (m/s):")
-        self.speed_label.grid(row=0, column=2, padx=5, pady=3, sticky="w")
+        #self.speed_label = tk.Label(self.vel, text="Velocidad (m/s):")
+        #self.speed_label.grid(row=0, column=2, padx=5, pady=3, sticky="w")
 
-        self.speed_entry = tk.Entry(self.vel)
-        self.speed_entry.insert(0, str(self.speed))
-        self.speed_entry.grid(row=0, column=3, padx=5, pady=3, sticky="ew")
+        #self.speed_entry = tk.Entry(self.vel)
+        #self.speed_entry.insert(0, str(self.speed))
+        #self.speed_entry.grid(row=0, column=3, padx=5, pady=3, sticky="ew")
 
         # === Eliminar Misión ===
         self.el_mision = tk.LabelFrame(self.MapMission, text="Eliminar Misión Existente")
@@ -145,8 +143,7 @@ class MapMission:
     # ====== GEOFENCE =======
     # aqui venimos cuando tenemos ya definido el geofence y lo queremos enviar al dron
     def MostrarGeoFence(self):
-
-        with open("GeoFenceScenario.json", "r") as file:
+        with open("waypoints geofence/GeoFenceScenario.json", "r") as file:
             scenario_data = json.load(file)
 
         self.geofence_waypoints = scenario_data[0]["waypoints"]
@@ -158,6 +155,18 @@ class MapMission:
             border_width=4,
             name="GeoFence_polygon"
         )
+
+        if self.new_geofence:
+            with open("waypoints geofence/NewGeoFenceScenario.json", "r") as file:
+                scenario_data1 = json.load(file)
+            self.geofence_waypoints1 = scenario_data1[0]["waypoints"]
+            polygon1 = self.map_widget.set_polygon(
+                [(point['lat'], point['lon']) for point in self.geofence_waypoints1],
+                fill_color=None,
+                outline_color="red",
+                border_width=4,
+                name="NewGeoFence_polygon"
+            )
     # Usamos para comprobar si wp dentro de geofence
     def dentro_de_geofence(self, lat, lon):
         geofence_polygon = [(point['lat'], point['lon']) for point in self.geofence_waypoints]
@@ -180,7 +189,27 @@ class MapMission:
                             inside = not inside
 
             p1x, p1y = p2x, p2y
+        if self.new_geofence:
+            geofence_polygon = [(point['lat'], point['lon']) for point in self.geofence_waypoints1]
 
+            inside = False
+            x, y = lat, lon
+            n = len(geofence_polygon)
+            p1x, p1y = geofence_polygon[0]
+
+            for i in range(n + 1):
+                p2x, p2y = geofence_polygon[i % n]
+                if y > min(p1y, p2y):
+                    if y <= max(p1y, p2y):
+                        if x <= max(p1x, p2x):
+                            if p1y != p2y:
+                                xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                            else:
+                                xinters = p1x
+                            if p1x == p2x or x <= xinters:
+                                inside = not inside
+
+                p1x, p1y = p2x, p2y
         return inside
 
     # ===== FUNCIONES MISIÓN ======
@@ -337,11 +366,6 @@ class MapMission:
             return
         if not self.waypoints:
             messagebox.showerror("No hay Waypoints", "Por favor, añade waypoints antes de guardar la misión.")
-            return
-        try:
-            self.speed = float(self.speed_entry.get())
-        except ValueError:
-            messagebox.showerror("Velocidad inválida", "Por favor, introduce un número válido para la velocidad.")
             return
 
         mission_folder = "missions"

@@ -16,7 +16,7 @@ scenario = [
 
 json_data = json.dumps(scenario, indent=4)
 
-with open("GeoFenceScenario.json", "w", encoding="utf-8") as file:
+with open("waypoints geofence/GeoFenceScenario.json", "w", encoding="utf-8") as file:
     file.write(json_data)
 
 print("JSON Creado")

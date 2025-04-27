@@ -14,6 +14,7 @@ from ObjectRecognition import *
 from StitchingMission import *
 from CreadorMisiones import *
 from ManualStitching import *
+from CreadorGeofence import *
 import io
 import threading
 import cv2
@@ -37,12 +38,8 @@ class MapFrameClass:
         self.dron.navSpeed = 1
         # atributos necesarios para crear el geofence
         self.vertex_count = 4
-
-        # atributos para establecer el trazado del dron
-        #self.trace = False
-        #self.marker = False
-        #self.last_position = None
-
+        self.flag_new_geofence = False
+        self.isconnected = False
         # Cargamos los tres iconos
         self.RTL_active = False
         self.icon_red = Image.open("assets/RedArrow.png")
@@ -284,7 +281,7 @@ class MapFrameClass:
 
         self.geo_label = tk.Label(self.param_frame, text="Editar Geofence:", fg="black")
         self.geo_label.grid(row=5, column=0, columnspan=4, padx=5, pady=3, sticky="w")
-        self.CrearGeoBtn = tk.Button(self.param_frame, text="Crear Geofence", bg="dark orange", fg="black")
+        self.CrearGeoBtn = tk.Button(self.param_frame, text="Crear Geofence", bg="dark orange", fg="black", command=self.creadorGeoFence)
         self.CrearGeoBtn.grid(row=6, column=0, columnspan = 4, padx=5, pady=3, sticky="nesw")
 
         # === FRAME VIDEO ===
@@ -318,15 +315,16 @@ class MapFrameClass:
         self.GeoFence()
         self.show_dron()
         self.cap = cv2.VideoCapture(self.camara_input)
+        self.dron.unfixHeading()
+        self.isconnected = True
 
     def arm_and_takeOff(self):
-        self.RTL_active = True
         self.informar('DESPEGANDO')
+        self.dron.setFlightMode('GUIDED')
         self.MapFrame.update_idletasks()
         # Ajuste para poder mostrar icono en amarillo y botón
         def takeoff_procedure():
             try:
-                #self.altura_vuelo = int(self.altura_input.get())
                 self.dron.arm()
                 self.dron.takeOff(self.altura_vuelo)
             finally:
@@ -334,8 +332,6 @@ class MapFrameClass:
         threading.Thread(target=takeoff_procedure, daemon=True).start()
 
     def RTL(self):
-        #if self.dron.going:
-        #    self.dron.stopGo()
         self.RTL_active = True
 
         # llamo en modo no bloqueante y le indico qué función debe activar al acabar la operación, y qué parámetro debe usar
@@ -373,6 +369,7 @@ class MapFrameClass:
             self.despegarBtn['fg'] = 'black'
             self.despegarBtn['text'] = 'Despegando...'
         if mensaje == "VOLANDO":
+            self.RTL_active = False
             self.despegarBtn['bg'] = 'green'
             self.despegarBtn['fg'] = 'white'
             self.despegarBtn['text'] = 'Volando'
@@ -436,13 +433,12 @@ class MapFrameClass:
 
     # ====== GEOFENCE =======
     def GeoFence(self):
-
-        with open("GeoFenceScenario.json", "r") as file:
+        with open("waypoints geofence/GeoFenceScenario.json", "r") as file:
             scenario_data = json.load(file)
 
         geofence_waypoints = scenario_data[0]["waypoints"]
 
-        polygon = self.map_widget.set_polygon(
+        self.map_widget.set_polygon(
             [(point['lat'], point['lon']) for point in geofence_waypoints],
             fill_color=None,
             outline_color="red",
@@ -457,6 +453,47 @@ class MapFrameClass:
             {'ID': "FENCE_ACTION", 'Value': 4}
         ]
         self.dron.setParams(parameters)
+
+    def creadorGeoFence(self):
+        if self.isconnected == False:
+            messagebox.showerror("Error", f"Establece conexión para crear la Geofence.")
+            return
+        map_window = tk.Toplevel()
+        map_window.title("Creador de Misiones")
+        map_window.geometry("720x480")
+
+        map_geofence_class = GeoFenceCreator(self.dron)
+        map_frame = map_geofence_class.buildFrame(map_window)
+        map_frame.pack(fill="both", expand=True)
+
+        map_geofence_class.save_geofence_btn.config(
+            command=lambda: self.handle_new_geofence(map_geofence_class.save_geofence(), map_window)
+        )
+
+    def handle_new_geofence(self, geofence_data, window):
+        if geofence_data:
+            self.dron.setScenario(geofence_data)
+            parameters = [
+                {'ID': "FENCE_ENABLE", 'Value': 1},
+                {'ID': "FENCE_ACTION", 'Value': 4}
+            ]
+            self.dron.setParams(parameters)
+
+            self.update_geofence_display(geofence_data[0]["waypoints"])
+            window.destroy()
+        self.flag_new_geofence = True
+
+    def update_geofence_display(self, waypoints):
+        for item in self.map_widget.canvas.find_withtag("geofence"):
+            self.map_widget.canvas.delete(item)
+
+        self.map_widget.set_polygon(
+            [(point['lat'], point['lon']) for point in waypoints],
+            fill_color=None,
+            outline_color="red",
+            border_width=4,
+            name="geofence"  # Remove the tag parameter
+        )
 
     # ====== CAMBIAR PRODUCCIÓN SIMULACIÓN ======
     def change_connection(self):
@@ -480,7 +517,7 @@ class MapFrameClass:
         map_window.title("Creador de Misiones")
         map_window.geometry("920x620")
 
-        map_mission_class = MapMission(self.dron, self.altura_vuelo, self.dron.navSpeed)
+        map_mission_class = MapMission(self.dron, self.altura_vuelo, self.dron.navSpeed, self.flag_new_geofence)
         map_frame = map_mission_class.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
 
@@ -490,7 +527,7 @@ class MapFrameClass:
         map_window.title("Creador de Misiones")
         map_window.geometry("300x150")
 
-        map_mission_stiching = StitchingMission(self.dron, self.altura_vuelo)
+        map_mission_stiching = StitchingMission(self.dron, self.altura_vuelo, self.dron.navSpeed)
         map_frame = map_mission_stiching.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
 
@@ -621,8 +658,6 @@ class MapFrameClass:
         if mission is None:
             return
 
-        #mission['speed'] = 1
-
         self.dron.uploadMission(mission, blocking=False)
         messagebox.showinfo("Inicio Misión", '¡Comienza la misión!')
 
@@ -630,13 +665,11 @@ class MapFrameClass:
             self.dron.send_telemetry_info(self.process_telemetry_info)
 
         self.dron.executeFlightPlan(mission, blocking = False, inWaypoint=self.aqui)
-
-        check_if_landed = lambda: (
-            self.informar("FIN MISION")
-            if self.altura <= 0.03
-            else self.MapFrame.after(1000, check_if_landed)
-        )
-        self.MapFrame.after(1000, check_if_landed)
+        def check_if_landed():
+            if self.altura <= 0.03:
+                self.informar("FIN MISION")
+            else: self.MapFrame.after(1000, check_if_landed)
+        self.MapFrame.after(12000, check_if_landed) # Primer check después de 12 segundos
 
         #messagebox.showinfo("Misión Cumplida", '¡Misión cumplida!')
 
@@ -990,7 +1023,7 @@ class MapFrameClass:
     # ====== PARAMETROS ======
     def aplicar_altura(self):
         try:
-            nueva_altura = float(self.altura_entry.get())
+            nueva_altura = int(self.altura_entry.get())
             if nueva_altura <= 0:
                 raise ValueError("La altura debe ser mayor que 0")
 
