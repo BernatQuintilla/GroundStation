@@ -498,13 +498,36 @@ class MapFrameClass:
     # ====== CAMBIAR PRODUCCIÓN SIMULACIÓN ======
     def change_connection(self):
         if self.tipo_conexión == "simulación":
-            self.tipo_conexión = "producción"
-            self.camara_input = 1
-            self.connection_string = 'COM3'
-            self.baud = 57600
-            self.informar('PRODUCCIÓN')
+
+            #self.tipo_conexión = "producción"
+            #self.camara_input = 1
+            #self.connection_string = 'COM3'
+            #self.baud = 57600
+            #self.informar('PRODUCCIÓN')
+
+            conn_window = tk.Toplevel()
+            conn_window.title("Configuración de Simulación")
+            conn_window.geometry("300x120")
+
+            tk.Label(conn_window, text="Introduce el puerto de conexión:").pack(pady=10)
+
+            conn_entry = tk.Entry(conn_window, width=40)
+            conn_entry.pack(pady=5)
+
+            def apply_connection():
+                new_connection = conn_entry.get()
+                if new_connection:
+                    self.connection_string = new_connection
+                    self.tipo_conexión = "producción"
+                    self.camara_input = 1
+                    self.baud = 57600
+                    self.informar('PRODUCCIÓN')
+                    conn_window.destroy()
+
+            tk.Button(conn_window, text="Aceptar", command=apply_connection).pack(pady=10)
 
         elif self.tipo_conexión == "producción":
+
             self.tipo_conexión = "simulación"
             self.camara_input = 0
             self.connection_string = 'tcp:127.0.0.1:5763'

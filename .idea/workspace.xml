@@ -5,13 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="56ee8b3b-2adc-4a1e-b189-11760bafa3fc" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/CreadorGeofence.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CreadorCoordJSON.py" beforeDir="false" afterPath="$PROJECT_DIR$/CreadorCoordJSON.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CreadorMisiones.py" beforeDir="false" afterPath="$PROJECT_DIR$/CreadorMisiones.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/GeoFenceScenario.json" beforeDir="false" afterPath="$PROJECT_DIR$/waypoints geofence/GeoFenceScenario.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MapInterface.py" beforeDir="false" afterPath="$PROJECT_DIR$/MapInterface.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/StitchingMission.py" beforeDir="false" afterPath="$PROJECT_DIR$/StitchingMission.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
