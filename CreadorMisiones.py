@@ -1,14 +1,8 @@
-import json
 import tkinter as tk
 import os
 import tkintermapview
-from tkinter import Canvas
 from tkinter import messagebox, simpledialog
-from tkinter import ttk
-from pymavlink import mavutil
 from PIL import Image, ImageTk
-from CamaraVideo import *
-from ObjectRecognition import *
 import json
 import shutil
 

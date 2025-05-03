@@ -1,14 +1,7 @@
-import json
 import tkinter as tk
-import os
 import tkintermapview
-from tkinter import Canvas
-from tkinter import messagebox, simpledialog
 import json
-import os
-import tkinter as tk
 from tkinter import messagebox
-from tkintermapview import TkinterMapView
 from PIL import Image, ImageTk
 
 

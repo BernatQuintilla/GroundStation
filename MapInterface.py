@@ -1,30 +1,13 @@
-import json
-import time
-import tkinter as tk
-import tkintermapview
-from tkinter import Canvas
-from tkinter import messagebox
-from tkinter import ttk
-from tkinter import StringVar
 from tkinter import filedialog
-from pymavlink import mavutil
-from PIL import Image, ImageTk, ImageGrab
-from CamaraVideo import *
-from ObjectRecognition import *
 from StitchingMission import *
 from CreadorMisiones import *
 from ManualStitching import *
 from CreadorGeofence import *
-import io
 import threading
-import cv2
 import os
 from datetime import datetime
-import shutil
-from dronLink.modules.dron_telemetry import send_telemetry_info
 from ultralytics import YOLO
 import cv2
-import numpy as np
 
 
 class MapFrameClass:
@@ -144,10 +127,6 @@ class MapFrameClass:
 
         self.despegarBtn = tk.Button(self.control_frame, text="Despegar", bg="dark orange", fg="black",command=self.arm_and_takeOff)
         self.despegarBtn.grid(row=1, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
-
-        #self.altura_input = tk.Entry(self.control_frame, width=3)
-        #self.altura_input.grid(row=0, column=2,columnspan=1, padx=1, pady=3)
-        #self.altura_input.insert(0, str(self.altura_vuelo))
 
         self.RTLBtn = tk.Button(self.control_frame, text="RTL", bg="dark orange", fg="black",command=self.RTL)
         self.RTLBtn.grid(row=1, column=2, columnspan=1, padx=5, pady=3, sticky="nesw")
@@ -1069,13 +1048,6 @@ class MapFrameClass:
             messagebox.showerror("Error", f"Dato inválido: {str(e)}")
             self.vel_entry.delete(0, tk.END)
             self.vel_entry.insert(0, f"{self.dron.navSpeed:.1f}")
-
-    # ====== FUNCIONALIDADES ======
-    #def activar_camara(self):
-    #    show_camera_video(self.MapFrame)
-
-    #def activar_ObjRecognition(self):
-    #    show_camera_recognition(self.MapFrame)
 
 
 
