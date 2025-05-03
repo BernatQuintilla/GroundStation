@@ -13,18 +13,25 @@ import cv2
 class MapFrameClass:
     # ======== INICIALIZAR CLASE ========
     def __init__(self, dron):
-        # guardamos el objeto de la clase dron con el que estamos controlando el dron
+        # guardamos el objeto de la clase dron como atributo de la clase
         self.dron = dron
+
+        # parametros para hacer seguimiento de altura y heading
         self.altura = 0
         self.heading = 0
+
+        # parametros para planes de vuelo
         self.altura_vuelo = 5
         self.dron.navSpeed = 1
+
         # atributos necesarios para crear el geofence
-        self.vertex_count = 4
         self.flag_new_geofence = False
         self.isconnected = False
-        # Cargamos los tres iconos
+
+        # booleano para saber si RTL activo
         self.RTL_active = False
+
+        # carga de los 3 posibles iconos del dron (verde/amarillo/rojo)
         self.icon_red = Image.open("assets/RedArrow.png")
         self.resized_icon_red = self.icon_red.resize((30, 30), Image.LANCZOS)
         self.photo_red = ImageTk.PhotoImage(self.resized_icon_red)
@@ -37,47 +44,41 @@ class MapFrameClass:
         self.resized_icon_green = self.icon_green.resize((30, 30), Image.LANCZOS)
         self.photo_green = ImageTk.PhotoImage(self.resized_icon_green)
 
-        # Iconos del dron y markers
+        # seguimiento de icono dron
         self.drone_marker = None
-        self.icon = Image.open("assets/drone.png")
-        self.resized_icon = self.icon.resize((50, 50), Image.LANCZOS)
-        self.photo = ImageTk.PhotoImage(self.resized_icon)
 
-        self.marker_photo = Image.open("assets/marker_icon.png")
-        self.resized_marker_icon = self.marker_photo.resize((20, 20), Image.LANCZOS)
-        self.marker_icon = ImageTk.PhotoImage(self.resized_marker_icon)
-
-        # Nombre misión
+        # parametros para gestion de misiones
         self.nombre_mision = ""
         self.mission_names = []
         self.mission_var = tk.StringVar()
         self.waypoints_actions = None
 
+        # inicializo frames de ventanas complementarias
         self.map_frame = None
         self.gallery_frame = None
         self.gallery_processed_frame = None
         self.stitch_frame = None
 
-        # YOLO model
+        # cargo modelo reconocimento de objetos
         self.model = YOLO("models/yolov8n.pt")
 
-        # Reconocimiento Objetos
+        # parametros reconocimiento Objetos
         self.video_label = None
         self.detected_objects = []
 
-        # Variables para cambiar producción y simulación (simulación en predeterminado)
+        # variables para cambiar producción y simulación (simulación en predeterminado)
         self.tipo_conexión = "simulación"
         self.camara_input = 0
         self.connection_string = 'tcp:127.0.0.1:5763'
         self.baud = 115200
 
-        # Abrimos cámara
+        # inicializo cámara
         self.cap = None
 
     # ======== BUILD FRAME ========
     def buildFrame(self, fatherFrame):
 
-        self.MapFrame = tk.Frame(fatherFrame)  # create new frame where the map will be allocated
+        self.MapFrame = tk.Frame(fatherFrame)
 
         # creamos el widget para el mapa
         self.map_widget = tkintermapview.TkinterMapView(self.MapFrame, width=850, height=600, corner_radius=0)
@@ -144,7 +145,7 @@ class MapFrameClass:
         self.tele_frame.rowconfigure(0, weight=2)
         self.tele_frame.rowconfigure(1, weight=2)
         self.tele_frame.columnconfigure(0, weight=2)
-
+        # Muestro valor de altura inicializado
         self.AlturaLabel = tk.Label(
             self.tele_frame,
             text=f"Altura: {self.altura} m",
@@ -153,7 +154,7 @@ class MapFrameClass:
             width=12,
         )
         self.AlturaLabel.grid(row=0, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
-
+        # Muestro valor de heading inicializado
         self.HeadingLabel = tk.Label(
             self.tele_frame,
             text=f"Heading: {self.heading} º",
@@ -180,7 +181,7 @@ class MapFrameClass:
             text=f"Misión: no seleccionada",
             bg="light gray",
             fg="black",
-            width=20,  # Adjust the width to your needs
+            width=20,
         )
         self.MisionLabel.grid(row=0, column=1, columnspan=2, padx=5, pady=3, sticky="nesw")
 
@@ -226,7 +227,7 @@ class MapFrameClass:
         self.StSIFTBtn = tk.Button(self.galeria_frame, text="Stitching SIFT", bg="dark orange", fg="black", command= self.show_manual_stitched_image)
         self.StSIFTBtn.grid(row=1, column=1, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        # FRAME PARÁMETROS
+        # === FRAME PARÁMETROS ===
         self.param_frame = tk.LabelFrame(self.MapFrame, text="Editor Parámetros")
         self.param_frame.grid(row=1, column=11, columnspan=4, rowspan=2, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
         self.param_frame.rowconfigure(0, weight=2)
@@ -241,10 +242,10 @@ class MapFrameClass:
 
         self.info_label = tk.Label(self.param_frame, text="Los parámetros seleccionados se utilizarán en los planes de vuelo y acciones de control", fg="black",wraplength=240)
         self.info_label.grid(row=0, column=0, columnspan=4, padx=5, pady=3, sticky="w")
-
         self.alt_label = tk.Label(self.param_frame, text="Editar Altura (m):", fg="black")
         self.alt_label.grid(row=1, column=0, columnspan=4, padx=5, pady=3, sticky="w")
         self.altura_entry = tk.Entry(self.param_frame)
+        # creo una entrada para la altura con la altura inicializada previamente como predeterminada
         self.altura_entry.grid(row=2, column=0, padx=5, pady=5, sticky="e")
         self.altura_entry.insert(0, str(self.altura_vuelo))
         self.altBtn = tk.Button(self.param_frame, text="Aplicar", bg="dark orange", fg="black", command=self.aplicar_altura)
@@ -255,6 +256,7 @@ class MapFrameClass:
         self.velBtn = tk.Button(self.param_frame, text="Aplicar", bg="dark orange", fg="black", command=self.aplicar_velocidad)
         self.velBtn.grid(row=4, column=1, columnspan=2, padx=5, pady=3, sticky="nesw")
         self.vel_entry = tk.Entry(self.param_frame)
+        # creo una entrada para la velocidad con la velocidad inicializada previamente como predeterminada
         self.vel_entry.grid(row=4, column=0, padx=5, pady=5, sticky="e")
         self.vel_entry.insert(0, str(self.dron.navSpeed))
 
@@ -268,6 +270,7 @@ class MapFrameClass:
         self.camaravideo_frame.grid(row=3, column=11, columnspan=4, padx=6, pady=4, sticky=tk.N + tk.S + tk.E + tk.W)
 
         self.camaravideo_frame.config(width=2, height=100)
+        # grid_propagate(False) permite que el frame del video de la camara no modifique la interfaz y mmantenga las medidas introducidas
         self.camaravideo_frame.grid_propagate(False)
 
         self.camaravideo_frame.rowconfigure(0, weight=1)
@@ -276,6 +279,7 @@ class MapFrameClass:
 
         self.video_label = tk.Label(self.camaravideo_frame)
         self.video_label.grid(row=0, column=0, columnspan=1, padx=5, pady=5, sticky="nsew")
+        # llamo a la función show_video que muestra video en vdeo_label
         self.show_video()
         self.GuardarFrameBtn = tk.Button(self.camaravideo_frame, text="Guardar Frame", bg="dark orange", fg="black", command=self.capture_and_save_photo)
         self.GuardarFrameBtn.grid(row=1, column=0, columnspan = 4, padx=5, pady=3, sticky="nesw")
@@ -291,15 +295,20 @@ class MapFrameClass:
         self.connectBtn['bg'] = 'green'
         self.connectBtn['fg'] = 'white'
         self.connectBtn['text'] = 'Conectado'
+        # creación de geofence predeterminada
         self.GeoFence()
+        # muestro el dron en pantalla
         self.show_dron()
+        # inicio cámara
         self.cap = cv2.VideoCapture(self.camara_input)
+        # llamo a unfixHeading para caso en que misión stitching haya sido interrumpida anteriormente
         self.dron.unfixHeading()
         self.isconnected = True
 
     def arm_and_takeOff(self):
         self.informar('DESPEGANDO')
         self.dron.setFlightMode('GUIDED')
+        # para realizar todas las tareas antes de comenzar a armar
         self.MapFrame.update_idletasks()
         # Ajuste para poder mostrar icono en amarillo y botón
         def takeoff_procedure():
@@ -307,6 +316,7 @@ class MapFrameClass:
                 self.dron.arm()
                 self.dron.takeOff(self.altura_vuelo)
             finally:
+                # cuando dron acaba de hacer takeoff se informa que esta volando
                 self.MapFrame.after(0, lambda: self.informar('VOLANDO'))
         threading.Thread(target=takeoff_procedure, daemon=True).start()
 
@@ -319,8 +329,10 @@ class MapFrameClass:
         self.RTLBtn['bg'] = 'yellow'
         self.RTLBtn['text'] = 'Retornando....'
 
-    # ===== INFORMAR ======
+    # ======== INFORMAR ========
     def informar(self, mensaje):
+        # En esta función se cambian los estados del dron para modifiiciar colores en botones o el icono
+
         if mensaje == "EN CASA" or mensaje == "FIN MISION":
             # pongo el boton RTL en verde
             self.RTLBtn['bg'] = 'green'
@@ -344,11 +356,13 @@ class MapFrameClass:
             self.RTLBtn['text'] = 'RTL'
         if mensaje == "DESPEGANDO":
             self.RTL_active = True
+            # boton despegar en amarillo
             self.despegarBtn['bg'] = 'yellow'
             self.despegarBtn['fg'] = 'black'
             self.despegarBtn['text'] = 'Despegando...'
         if mensaje == "VOLANDO":
             self.RTL_active = False
+            # boton despegar en verde
             self.despegarBtn['bg'] = 'green'
             self.despegarBtn['fg'] = 'white'
             self.despegarBtn['text'] = 'Volando'
@@ -357,13 +371,15 @@ class MapFrameClass:
         if mensaje == "SIMULACIÓN":
             self.CambiarConexionBtn['text'] = 'Cambiar a producción'
 
-    # ======= MOSTRAR Y MODIFICAR ICONO DEL DRON =======
+    # ======== MOSTRAR Y MODIFICAR ICONO DEL DRON ========
     def show_dron(self):
+        #  esta función muestra el dron y actualiza datos de telemetria para su seguimiento
         self.update_drone_marker(self.initial_lat, self.initial_lon)
         if not self.dron.sendTelemetryInfo:
             self.dron.send_telemetry_info(self.process_telemetry_info)
 
     def rotate_icon(self, icon, angle):
+        # esta función permite que recibiendo el heading el icono en la pantalla pueda rotar segun donde apunta el dron
         if icon == self.photo_red:
             pil_image = self.resized_icon_red
         elif icon == self.photo_yellow:
@@ -377,16 +393,20 @@ class MapFrameClass:
         return rotated_icon
 
     def update_drone_marker(self, lat, lon):
+        # si RTL activo icono en amarillo
         if self.RTL_active:
             icon_to_use = self.photo_yellow
+        # si altura < 0.03 entonces icono rojo
         elif self.altura <= 0.03:
             icon_to_use = self.photo_red
+        # else icono verde
         else:
             icon_to_use = self.photo_green
 
         heading = self.dron.heading
+        # usa la funcion para rotar icono segun heading recibido
         rotated_icon = self.rotate_icon(icon_to_use, heading)
-
+        # elimina marker previo y pone el nuevo
         if self.drone_marker:
             self.map_widget.delete(self.drone_marker)
 
@@ -400,23 +420,25 @@ class MapFrameClass:
             icon_anchor="center"
         )
 
-    # ===== DATOS DE TELEMETRÍA =====
+    # ======== DATOS DE TELEMETRÍA ========
     def process_telemetry_info(self, telemetry_info):
         lat = telemetry_info['lat']
         lon = telemetry_info['lon']
+        # actualiza todos los parámetros de tracking y los paneles de altura y heading en la interfaz principal
         self.altura = round(telemetry_info['alt'], 2)
         self.AlturaLabel.config(text=f"Altura: {self.altura} m")
         self.heading = int(round(telemetry_info['heading']))
         self.HeadingLabel.config(text=f"Heading: {self.heading} º")
         self.update_drone_marker(lat, lon)
 
-    # ====== GEOFENCE =======
+    # ======== GEOFENCE =========
     def GeoFence(self):
+        # abre json con waypoints predeterminados
         with open("waypoints geofence/GeoFenceScenario.json", "r") as file:
             scenario_data = json.load(file)
 
         geofence_waypoints = scenario_data[0]["waypoints"]
-
+        # pinto en rojo geofence
         self.map_widget.set_polygon(
             [(point['lat'], point['lon']) for point in geofence_waypoints],
             fill_color=None,
@@ -424,13 +446,14 @@ class MapFrameClass:
             border_width=4,
             name="GeoFence_polygon"
         )
-
+        # llamo a función setScenario para establecer geofence
         self.dron.setScenario(scenario_data)
 
         parameters = [
             {'ID': "FENCE_ENABLE", 'Value': 1},
             {'ID': "FENCE_ACTION", 'Value': 4}
         ]
+        # uso esto para confirmar que es una geofence de inclusión
         self.dron.setParams(parameters)
 
     def creadorGeoFence(self):
@@ -440,16 +463,17 @@ class MapFrameClass:
         map_window = tk.Toplevel()
         map_window.title("Creador de Misiones")
         map_window.geometry("720x480")
-
+        # llamo a la clase de creador de geofence
         map_geofence_class = GeoFenceCreator(self.dron)
         map_frame = map_geofence_class.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
-
+        # de esta manera cuando la clase creadora de geofence la guarda se crea la geofence y se pinta de rojo
         map_geofence_class.save_geofence_btn.config(
             command=lambda: self.handle_new_geofence(map_geofence_class.save_geofence(), map_window)
         )
 
     def handle_new_geofence(self, geofence_data, window):
+        # crea la nueva geofence y cierra la ventana (mantiene la geofence predeterminada)
         if geofence_data:
             self.dron.setScenario(geofence_data)
             parameters = [
@@ -463,27 +487,26 @@ class MapFrameClass:
         self.flag_new_geofence = True
 
     def update_geofence_display(self, waypoints):
-        for item in self.map_widget.canvas.find_withtag("geofence"):
-            self.map_widget.canvas.delete(item)
-
+        # crea el dibujo de la geofence nueva
         self.map_widget.set_polygon(
             [(point['lat'], point['lon']) for point in waypoints],
             fill_color=None,
             outline_color="red",
             border_width=4,
-            name="geofence"  # Remove the tag parameter
+            name="geofence"
         )
 
-    # ====== CAMBIAR PRODUCCIÓN SIMULACIÓN ======
+    # ======== CAMBIAR PRODUCCIÓN SIMULACIÓN ========
     def change_connection(self):
         if self.tipo_conexión == "simulación":
-
+            # este bloque es por si al introducir puerto llegara a fallar se puede usar este código
             #self.tipo_conexión = "producción"
             #self.camara_input = 1
             #self.connection_string = 'COM3'
             #self.baud = 57600
             #self.informar('PRODUCCIÓN')
 
+            # creo una ventana para introducir puerto de produccion
             conn_window = tk.Toplevel()
             conn_window.title("Configuración de Simulación")
             conn_window.geometry("300x120")
@@ -494,6 +517,7 @@ class MapFrameClass:
             conn_entry.pack(pady=5)
 
             def apply_connection():
+                # con la string del puerto de producción actualizo parametros usados en la funcion connect
                 new_connection = conn_entry.get()
                 if new_connection:
                     self.connection_string = new_connection
@@ -506,64 +530,68 @@ class MapFrameClass:
             tk.Button(conn_window, text="Aceptar", command=apply_connection).pack(pady=10)
 
         elif self.tipo_conexión == "producción":
-
+            # para simulacion los parametros son fijos
             self.tipo_conexión = "simulación"
             self.camara_input = 0
             self.connection_string = 'tcp:127.0.0.1:5763'
             self.baud = 115200
             self.informar('SIMULACIÓN')
 
-    # ====== CREADOR MISIONES ======
+    # ======== CREADOR MISIONES ========
     def show_mission_map(self):
         map_window = tk.Toplevel()
         map_window.title("Creador de Misiones")
         map_window.geometry("920x620")
-
+        # llamo a clase de creador de misiones con input el dron, la altura y velocidad de vuelo, y si hay nueva geofence para pintarla en ese caso
         map_mission_class = MapMission(self.dron, self.altura_vuelo, self.dron.navSpeed, self.flag_new_geofence)
         map_frame = map_mission_class.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
 
-    # ====== CREADOR MISIONES STITCHING ======
+    # ======== CREADOR MISIONES STITCHING ========
     def show_mission_stitching(self):
         map_window = tk.Toplevel()
         map_window.title("Creador de Misiones")
         map_window.geometry("300x150")
-
+        # llamo a clase de creacion de misiones de stitching con input la variable dron, y los parametros de vuelo
         map_mission_stiching = StitchingMission(self.dron, self.altura_vuelo, self.dron.navSpeed)
         map_frame = map_mission_stiching.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
 
-    # ====== SELECCIONAR MISION ======
+    # ======== SELECCIONAR MISION ========
     def select_mission(self):
+        # abrir carpeta donde se guardan los json de las misiones y seleccionar una
         mission_path = filedialog.askopenfilename(
             title="Seleccionar Misión",
             initialdir=os.path.join(os.getcwd(), "missions"),
             filetypes=(("JSON files", "*.json"), ("All files", "*.*"))
         )
-
+        # guardo el nombre de la mision seleccionado
         if mission_path:
             self.nombre_mision = os.path.splitext(os.path.basename(mission_path))[0]
-            #messagebox.showinfo("Misión Seleccionada", f'La misión "{self.nombre_mision}" ha sido seleccionada.')
+        # cargo los wp de la mision seleccionada
         self.load_visual_mission_waypoints(mission_path)
+        # en el panel donde muestro nombre de misión seleccionado introduzco nombre de mision
         self.MisionLabel.config(text=f"Misión: {self.nombre_mision}")
 
     def load_visual_mission_waypoints(self, mission_path):
+        # en esta función cargo wp de misión seleccionada y su camino
         try:
             with open(mission_path, "r") as file:
                 mission_data = json.load(file)
 
             waypoints = mission_data.get("waypoints", [])
+            # elimino todos los markers (no sobreponer wp de misiones)
             self.map_widget.delete_all_marker()
             self.map_widget.delete_all_path()
 
             wp_positions = []
-
+            # cargo png de wp
             location_point_img = Image.open("assets/WaypointMarker.png")
             resized_location_point = location_point_img.resize((25, 25), Image.LANCZOS)
             location_point_icon = ImageTk.PhotoImage(resized_location_point)
 
             self.wp_icon = location_point_icon
-
+            # introduzco los wp en la interfaz
             for i, wp in enumerate(waypoints, start=1):
                 lat, lon = wp["lat"], wp["lon"]
                 self.map_widget.set_marker(lat, lon,
@@ -582,24 +610,26 @@ class MapFrameClass:
         except json.JSONDecodeError:
             print(f"Error: Formato JSON inválido en '{mission_path}'.")
 
-    # ====== EJECUTAR MISION ======
+    # ======== EJECUTAR MISION ========
     def load_mission(self):
+        # esta funcion carga la mision y las acciones de los wp
         if self.nombre_mision == "":
             messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
             return None
         try:
+            # obtengo path para mision y acciones de wp
             mission_path = os.path.join("missions", f"{self.nombre_mision}.json")
             actions_waypoints_path = os.path.join("waypoints", f"{self.nombre_mision}.json")
             with open(mission_path, "r") as mission_file:
                 mission = json.load(mission_file)
             with open(actions_waypoints_path, "r") as file:
+                # me guardo en esta variable las acciones en los wp
                 self.waypoints_actions = json.load(file)
 
             if "takeOffAlt" not in mission or "waypoints" not in mission:
                 messagebox.showerror("Misión Inválida", "El archivo de misión es inválido.")
                 return None
-
-            #messagebox.showinfo("Misión Cargada", f'¡La misión "{self.nombre_mision}" se ha cargado correctamente!')
+            # devuelvo mision cargada en variable
             return mission
 
         except FileNotFoundError:
@@ -612,13 +642,15 @@ class MapFrameClass:
         return None
 
     def capture_and_save_photo(self):
+        # esta funcion captura imagen y la guarda en la carpeta de fotos de la mision
+        # obtengo la carpeta de fotos de la mision
         mission_folder = f"photos/{self.nombre_mision}"
         if self.cap == None:
             messagebox.showerror("Error", f"Inicia la conexión para poder capurar el frame.")
         if not self.nombre_mision:
             messagebox.showerror("Error", f"No hay una misión seleccionada donde guardar el frame.")
             return
-
+        # si no existe la carpeta la creo
         if not os.path.exists(mission_folder):
             os.makedirs(mission_folder)
             print(f"Carpeta '{mission_folder}' creada.")
@@ -628,13 +660,14 @@ class MapFrameClass:
         if not cap.isOpened():
             print("Error: No se ha podido acceder a la cámara.")
             return
-
+        # leemos frame con camara iniciada previamente al conectar
         ret, frame = cap.read()
 
         if ret:
+            # guardamos foto con nombre teniendo el dia, hora, minuto y segundo en que se ha tomado
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"{mission_folder}/photo_{timestamp}.jpg"
-
+            # guardamos frame
             cv2.imwrite(filename, frame)
             print(f"Foto guardada como {filename}.")
 
@@ -642,77 +675,85 @@ class MapFrameClass:
             print("Error: Fallo en capturar la foto.")
 
     def aqui(self, index, wp):
+        # llamamos a esta funcion en cada wp de la mision, leyendo la variable waypoints_actions guardada en load_mission
+        # si angle no es -1 entonces con angulo recibido cambiamos el heading
         if self.waypoints_actions['angle'][index] != -1:
             self.dron.changeHeading(self.waypoints_actions['angle'][index])
+        # si photo es 1 entonces llamamos a funcion capture_and_save_photo y realizamos captura del frame
         if self.waypoints_actions['photo'][index] == 1:
             self.capture_and_save_photo()
 
-        fix_actions = self.waypoints_actions.get('fix', []) # Fix solo se usa en misiones de stitching, este if hace que no de error en misiones normales
+        # fix solo se usa en misiones de stitching, este if hace que no de error en misiones normales
+        fix_actions = self.waypoints_actions.get('fix', [])
         if index < len(fix_actions):
+            # si fix es un 1 entonces fijo heading
             if fix_actions[index] == 1:
                 self.dron.fixHeading()
+            # si fix es un 2 entonces quito el heading fijo
             elif fix_actions[index] == 2:
                 self.dron.unfixHeading()
         return
 
     def execute_mission(self):
+        # esta funcion ejecuta la mision
+        # cargo la mision
         mission = self.load_mission()
         if mission is None:
             return
-
+        # enviamos mision llamando a uploadMission
         self.dron.uploadMission(mission, blocking=False)
         messagebox.showinfo("Inicio Misión", '¡Comienza la misión!')
 
         if not self.dron.sendTelemetryInfo:
             self.dron.send_telemetry_info(self.process_telemetry_info)
-
+        # ejecutamos mision en llamada no bloqueante llamando en cada waypoint a la funcion aqui
         self.dron.executeFlightPlan(mission, blocking = False, inWaypoint=self.aqui)
         def check_if_landed():
             if self.altura <= 0.03:
                 self.informar("FIN MISION")
+            # cada segundo comprueba si mision ha terminado
             else: self.MapFrame.after(1000, check_if_landed)
-        self.MapFrame.after(12000, check_if_landed) # Primer check después de 12 segundos
+        # el primer check del fin de la mision comienza despues de 12 segundos del inicio de la mision (si desde el principio siempre icono rojo)
+        self.MapFrame.after(12000, check_if_landed)
 
-        #messagebox.showinfo("Misión Cumplida", '¡Misión cumplida!')
 
-    # ====== IMAGE STITCHING OPENCV =======
+    # ======== IMAGE STITCHING OPENCV =========
     def show_stitched_image(self):
         if self.nombre_mision == "":
             messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
             return None
-
+        # variable con path a fotos de mision
         image_directory = f"photos/{self.nombre_mision}"
         if not os.path.exists(image_directory):
             messagebox.showerror("Misión sin imágenes", "La misión seleccionada no tiene imágenes.")
             return None
 
-        image_directory = f"photos/{self.nombre_mision}"
         if not os.path.exists(image_directory):
             messagebox.showerror("Error", f"El directorio {image_directory} no existe.")
             return
 
         images = [cv2.imread(os.path.join(image_directory, f)) for f in os.listdir(image_directory)
                   if f.endswith(('.png', '.jpg', '.jpeg', '.bmp', '.JPG'))]
-
+        # en esta variable guardar imagenes de carpeta
         images = [img for img in images if img is not None]
 
         if len(images) < 2:
             messagebox.showerror("Error", "Se necesitan al menos dos imágenes para hacer el stitching.")
             return
-
+        # se crea el stitcher de cv2 directamente generando la imagen resultante
         stitcher = cv2.Stitcher.create()
         status, stitched = stitcher.stitch(images)
 
         if status != cv2.Stitcher_OK:
             messagebox.showerror("Error", "No se pudo hacer el stitching de las imágenes.")
             return
-
-        stitched = cv2.cvtColor(stitched, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
+        # tratamiento de la imagen resultante para mostrar por pantalla
+        stitched = cv2.cvtColor(stitched, cv2.COLOR_BGR2RGB)
         stitched_pil = Image.fromarray(stitched)
         stitched_pil = stitched_pil.resize((800, 600), Image.Resampling.LANCZOS)
         stitched_photo = ImageTk.PhotoImage(stitched_pil)
 
-
+        # se muestra la imagen encima del panel principal
         if self.map_frame:
             self.map_frame.grid_forget()
 
@@ -724,22 +765,22 @@ class MapFrameClass:
         self.stitch_frame.columnconfigure(0, weight=1)
         self.stitch_frame.columnconfigure(1, weight=10)
         self.stitch_frame.columnconfigure(2, weight=1)
-
+        # se muestra la foto procesada
         img_label = tk.Label(self.stitch_frame, image=stitched_photo)
         img_label.image = stitched_photo
         img_label.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
-
+        # cuando se da a boton volver se llama a show_main_page para volver a mostrar panel principal
         back_button = tk.Button(self.stitch_frame, text="Volver", bg="dark orange", fg="black",
                                 command=self.show_main_page)
         back_button.grid(row=0, column=1, padx=20, pady=10, sticky="nsew")
 
-    # ====== IMAGE STITCHING MANUAL =======
+    # ======== IMAGE STITCHING MANUAL =========
     def show_manual_stitched_image(self):
         stitchingmanual = ManualImageStitching(self.nombre_mision, self.MapFrame)
         stitchingmanual.show_manual_stitched_image()
         return
 
-    # ====== GALERIA MISION ======
+    # ======== GALERIA MISION ========
     def show_gallery_page(self):
         if self.nombre_mision == "":
             messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
@@ -811,7 +852,7 @@ class MapFrameClass:
                                 command=self.show_main_page)
         back_button.grid(row=0, column=1, padx=20, pady=10, sticky="nsew")
 
-    # ====== GALERIA MISION PROCESADA ======
+    # ======== GALERIA MISION PROCESADA ========
     def show_gallery_processed_page(self):
         if self.nombre_mision == "":
             messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
@@ -1022,7 +1063,7 @@ class MapFrameClass:
         self.cam_window.destroy()
         self.show_video()
 
-    # ====== PARAMETROS ======
+    # ======== PARAMETROS ========
     def aplicar_altura(self):
         try:
             nueva_altura = int(self.altura_entry.get())

@@ -6,14 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="56ee8b3b-2adc-4a1e-b189-11760bafa3fc" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CamaraVideo.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/CreadorCoordJSON.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/CreadorGeofence.py" beforeDir="false" afterPath="$PROJECT_DIR$/CreadorGeofence.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CreadorMisiones.py" beforeDir="false" afterPath="$PROJECT_DIR$/CreadorMisiones.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MapInterface.py" beforeDir="false" afterPath="$PROJECT_DIR$/MapInterface.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ObjectRecognition.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/StitchingMission.py" beforeDir="false" afterPath="$PROJECT_DIR$/StitchingMission.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/drone.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/marker_icon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/poses.png" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/waypoints geofence/NewGeoFenceScenario.json" beforeDir="false" afterPath="$PROJECT_DIR$/waypoints geofence/NewGeoFenceScenario.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
