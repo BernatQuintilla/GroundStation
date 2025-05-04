@@ -4,12 +4,12 @@ from MapInterface import MapFrameClass
 
 
 def showmap():
-    # Declaramos la variable global del dron
+    # declaro la variable global del dron
     global dron
     root_window = tk.Tk()
     root_window.title("Estación de tierra")
     root_window.geometry("1075x620")
-    # Inicializamos la clase del panel principal y mostramos la interfaz
+    # inicializo la clase del panel principal y mostramos la interfaz
     map_frame_class = MapFrameClass(dron)
     map_frame = map_frame_class.buildFrame(root_window)
     map_frame.pack(fill="both", expand=True)

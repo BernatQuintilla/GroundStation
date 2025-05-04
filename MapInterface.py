@@ -75,9 +75,9 @@ class MapFrameClass:
         # inicializo cámara
         self.cap = None
 
-    # ======== BUILD FRAME ========
+    # ======== BUILD FRAME PANEL PRINCIPAL ========
     def buildFrame(self, fatherFrame):
-
+        # llamo a la clase y inicializo el panel principal
         self.MapFrame = tk.Frame(fatherFrame)
 
         # creamos el widget para el mapa
@@ -289,6 +289,8 @@ class MapFrameClass:
 
     # ======== FUNCIONES CONTROL ========
     def connect(self):
+        # funcion para conectar con simulador o dron
+
         # conectamos con el simulador
         self.dron.connect(self.connection_string, self.baud)
         # una vez conectado cambio en color de boton
@@ -306,6 +308,8 @@ class MapFrameClass:
         self.isconnected = True
 
     def arm_and_takeOff(self):
+        # funcion para armar y despegar el dron
+
         self.informar('DESPEGANDO')
         self.dron.setFlightMode('GUIDED')
         # para realizar todas las tareas antes de comenzar a armar
@@ -321,6 +325,8 @@ class MapFrameClass:
         threading.Thread(target=takeoff_procedure, daemon=True).start()
 
     def RTL(self):
+        # funcion para ejecutar RTL
+
         self.RTL_active = True
 
         # llamo en modo no bloqueante y le indico qué función debe activar al acabar la operación, y qué parámetro debe usar
@@ -331,7 +337,7 @@ class MapFrameClass:
 
     # ======== INFORMAR ========
     def informar(self, mensaje):
-        # En esta función se cambian los estados del dron para modifiiciar colores en botones o el icono
+        # En esta función se cambian los estados del dron para modificar colores en botones o el icono
 
         if mensaje == "EN CASA" or mensaje == "FIN MISION":
             # pongo el boton RTL en verde
@@ -374,12 +380,14 @@ class MapFrameClass:
     # ======== MOSTRAR Y MODIFICAR ICONO DEL DRON ========
     def show_dron(self):
         #  esta función muestra el dron y actualiza datos de telemetria para su seguimiento
+
         self.update_drone_marker(self.initial_lat, self.initial_lon)
         if not self.dron.sendTelemetryInfo:
             self.dron.send_telemetry_info(self.process_telemetry_info)
 
     def rotate_icon(self, icon, angle):
         # esta función permite que recibiendo el heading el icono en la pantalla pueda rotar segun donde apunta el dron
+
         if icon == self.photo_red:
             pil_image = self.resized_icon_red
         elif icon == self.photo_yellow:
@@ -393,6 +401,8 @@ class MapFrameClass:
         return rotated_icon
 
     def update_drone_marker(self, lat, lon):
+        # funcion que actualiza el icono del dron (verde, amarillo o rojo)
+
         # si RTL activo icono en amarillo
         if self.RTL_active:
             icon_to_use = self.photo_yellow
@@ -422,6 +432,8 @@ class MapFrameClass:
 
     # ======== DATOS DE TELEMETRÍA ========
     def process_telemetry_info(self, telemetry_info):
+        # funcion que procesa los datos de telemetria y actualiza variables de tracking de telemetria
+
         lat = telemetry_info['lat']
         lon = telemetry_info['lon']
         # actualiza todos los parámetros de tracking y los paneles de altura y heading en la interfaz principal
@@ -433,6 +445,8 @@ class MapFrameClass:
 
     # ======== GEOFENCE =========
     def GeoFence(self):
+        # funcion que aplica geofence predeterminada
+
         # abre json con waypoints predeterminados
         with open("waypoints geofence/GeoFenceScenario.json", "r") as file:
             scenario_data = json.load(file)
@@ -457,6 +471,8 @@ class MapFrameClass:
         self.dron.setParams(parameters)
 
     def creadorGeoFence(self):
+        # funcion que muestra ventana de creador de geofence
+
         if self.isconnected == False:
             messagebox.showerror("Error", f"Establece conexión para crear la Geofence.")
             return
@@ -464,7 +480,7 @@ class MapFrameClass:
         map_window.title("Creador de Misiones")
         map_window.geometry("720x480")
         # llamo a la clase de creador de geofence
-        map_geofence_class = GeoFenceCreator(self.dron)
+        map_geofence_class = GeoFenceCreator()
         map_frame = map_geofence_class.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
         # de esta manera cuando la clase creadora de geofence la guarda se crea la geofence y se pinta de rojo
@@ -473,7 +489,8 @@ class MapFrameClass:
         )
 
     def handle_new_geofence(self, geofence_data, window):
-        # crea la nueva geofence y cierra la ventana (mantiene la geofence predeterminada)
+        # funcion que crea la nueva geofence y cierra la ventana (mantiene la geofence predeterminada)
+
         if geofence_data:
             self.dron.setScenario(geofence_data)
             parameters = [
@@ -487,7 +504,8 @@ class MapFrameClass:
         self.flag_new_geofence = True
 
     def update_geofence_display(self, waypoints):
-        # crea el dibujo de la geofence nueva
+        # funcion que crea el dibujo de la geofence nueva
+
         self.map_widget.set_polygon(
             [(point['lat'], point['lon']) for point in waypoints],
             fill_color=None,
@@ -498,8 +516,10 @@ class MapFrameClass:
 
     # ======== CAMBIAR PRODUCCIÓN SIMULACIÓN ========
     def change_connection(self):
+        # funcion que permite cambiar el codigo en uso de simulacion o produccion
+
         if self.tipo_conexión == "simulación":
-            # este bloque es por si al introducir puerto llegara a fallar se puede usar este código
+            # este bloque es por si al introducir puerto llegara a fallar se puede usar este codigo
             #self.tipo_conexión = "producción"
             #self.camara_input = 1
             #self.connection_string = 'COM3'
@@ -539,26 +559,32 @@ class MapFrameClass:
 
     # ======== CREADOR MISIONES ========
     def show_mission_map(self):
+        # funcion que muestra interfaz de creacion de misiones
+
         map_window = tk.Toplevel()
         map_window.title("Creador de Misiones")
         map_window.geometry("920x620")
         # llamo a clase de creador de misiones con input el dron, la altura y velocidad de vuelo, y si hay nueva geofence para pintarla en ese caso
-        map_mission_class = MapMission(self.dron, self.altura_vuelo, self.dron.navSpeed, self.flag_new_geofence)
+        map_mission_class = MapMission(self.altura_vuelo, self.dron.navSpeed, self.flag_new_geofence)
         map_frame = map_mission_class.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
 
     # ======== CREADOR MISIONES STITCHING ========
     def show_mission_stitching(self):
+        # funcion que muestra interfaz de creacion de misiones
+
         map_window = tk.Toplevel()
         map_window.title("Creador de Misiones")
         map_window.geometry("300x150")
         # llamo a clase de creacion de misiones de stitching con input la variable dron, y los parametros de vuelo
-        map_mission_stiching = StitchingMission(self.dron, self.altura_vuelo, self.dron.navSpeed)
+        map_mission_stiching = StitchingMission(self.altura_vuelo, self.dron.navSpeed)
         map_frame = map_mission_stiching.buildFrame(map_window)
         map_frame.pack(fill="both", expand=True)
 
     # ======== SELECCIONAR MISION ========
     def select_mission(self):
+        # funcion que permite seleccionar misiones disponibles
+
         # abrir carpeta donde se guardan los json de las misiones y seleccionar una
         mission_path = filedialog.askopenfilename(
             title="Seleccionar Misión",
@@ -575,6 +601,7 @@ class MapFrameClass:
 
     def load_visual_mission_waypoints(self, mission_path):
         # en esta función cargo wp de misión seleccionada y su camino
+
         try:
             with open(mission_path, "r") as file:
                 mission_data = json.load(file)
@@ -613,6 +640,7 @@ class MapFrameClass:
     # ======== EJECUTAR MISION ========
     def load_mission(self):
         # esta funcion carga la mision y las acciones de los wp
+
         if self.nombre_mision == "":
             messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
             return None
@@ -643,6 +671,7 @@ class MapFrameClass:
 
     def capture_and_save_photo(self):
         # esta funcion captura imagen y la guarda en la carpeta de fotos de la mision
+
         # obtengo la carpeta de fotos de la mision
         mission_folder = f"photos/{self.nombre_mision}"
         if self.cap == None:
@@ -676,6 +705,7 @@ class MapFrameClass:
 
     def aqui(self, index, wp):
         # llamamos a esta funcion en cada wp de la mision, leyendo la variable waypoints_actions guardada en load_mission
+
         # si angle no es -1 entonces con angulo recibido cambiamos el heading
         if self.waypoints_actions['angle'][index] != -1:
             self.dron.changeHeading(self.waypoints_actions['angle'][index])
@@ -696,6 +726,7 @@ class MapFrameClass:
 
     def execute_mission(self):
         # esta funcion ejecuta la mision
+
         # cargo la mision
         mission = self.load_mission()
         if mission is None:
@@ -716,9 +747,10 @@ class MapFrameClass:
         # el primer check del fin de la mision comienza despues de 12 segundos del inicio de la mision (si desde el principio siempre icono rojo)
         self.MapFrame.after(12000, check_if_landed)
 
-
-    # ======== IMAGE STITCHING OPENCV =========
+    # ======== IMAGE STITCHING OPENCV ========
     def show_stitched_image(self):
+        # esta funcion procesa las imagenes de la mision y hace el stitching usando la libreria OpenCV
+
         if self.nombre_mision == "":
             messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
             return None
@@ -774,23 +806,27 @@ class MapFrameClass:
                                 command=self.show_main_page)
         back_button.grid(row=0, column=1, padx=20, pady=10, sticky="nsew")
 
-    # ======== IMAGE STITCHING MANUAL =========
+    # ======== IMAGE STITCHING MANUAL ========
     def show_manual_stitched_image(self):
+        # esta funcion llama a la clase del stitching manual y muestra la imagen preocesada
+
         stitchingmanual = ManualImageStitching(self.nombre_mision, self.MapFrame)
         stitchingmanual.show_manual_stitched_image()
         return
 
     # ======== GALERIA MISION ========
     def show_gallery_page(self):
+        # esta funcion muestra la galeria de imagenes
+
         if self.nombre_mision == "":
             messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
             return None
-
+        # selecciona carpeta de fotos de misión seleccionada actualmente
         image_directory = f"photos/{self.nombre_mision}"
         if not os.path.exists(image_directory):
             messagebox.showerror("Misión sin imágenes", "La misión seleccionada no tiene imágenes.")
             return None
-
+        # encima de panel principal pongo la galeria de imagenes
         if self.map_frame:
             self.map_frame.grid_forget()
 
@@ -804,17 +840,18 @@ class MapFrameClass:
         self.gallery_frame.columnconfigure(1, weight=10)
         self.gallery_frame.columnconfigure(2, weight=1)
 
-        image_directory = f"photos/{self.nombre_mision}"
         if not os.path.exists(image_directory):
             messagebox.showerror("Error", f"El directorio {image_directory} no existe.")
             return
-
+        # variable con las imagenes de la carpeta
         images = [f for f in os.listdir(image_directory) if f.endswith(('.png', '.jpg', '.jpeg', '.bmp', '.JPG'))]
 
         self.current_image_index = 0
         self.img_labels = []
 
         def display_image(index):
+            # funcion usada para mostrar la imagen
+            # elimina labels de imagen mostrada anteriormente
             for label in self.img_labels:
                 label.destroy()
 
@@ -833,11 +870,13 @@ class MapFrameClass:
         display_image(self.current_image_index)
 
         def next_image():
+            # funcion para mostrar la siguiente imagen
             if self.current_image_index < len(images) - 1:
                 self.current_image_index += 1
                 display_image(self.current_image_index)
 
         def prev_image():
+            # funcion para mostrar la imagen previa
             if self.current_image_index > 0:
                 self.current_image_index -= 1
                 display_image(self.current_image_index)
@@ -847,13 +886,15 @@ class MapFrameClass:
 
         right_button = tk.Button(self.gallery_frame, text=">", bg="dark orange", fg="black", command=next_image)
         right_button.grid(row=0, column=2, padx=20, pady=10, sticky="nsew")
-
+        # para volver al panel principal llamo a show_main_page
         back_button = tk.Button(self.gallery_frame, text="Volver", bg="dark orange", fg="black",
                                 command=self.show_main_page)
         back_button.grid(row=0, column=1, padx=20, pady=10, sticky="nsew")
 
     # ======== GALERIA MISION PROCESADA ========
     def show_gallery_processed_page(self):
+        # esta funcion usa la misma estructura que la galeria anterior pero añadiendo el procesado de imagenes
+
         if self.nombre_mision == "":
             messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
             return None
@@ -879,7 +920,8 @@ class MapFrameClass:
         self.current_image_index = 0
         self.img_labels = []
 
-        # Diccionario de clases: (https://stackoverflow.com/questions/77477793/class-ids-and-their-relevant-class-names-for-yolov8-model#:~:text=I%20understand%20there%20are%20approximately,object%20detection%20model%20of%20YOLOv8.)
+        # Diccionario de clases del modelo: (https://stackoverflow.com/questions/77477793/class-ids-and-their-relevant-class-names-for-yolov8-model#:~:text=I%20understand%20there%20are%20approximately,object%20detection%20model%20of%20YOLOv8.)
+        # clases seleccionadas para procesar imagen
         class_dict = {0: 'person',1: 'bicycle', 51: 'carrot', 46: 'banana', 38: 'tennis racket', 74: 'clock'}
 
         self.selected_class = tk.IntVar()
@@ -887,33 +929,35 @@ class MapFrameClass:
 
         class_names = list(class_dict.values())
         self.selected_name = tk.StringVar()
-
+        # creacion de menu de opciones donde seleccionar que clase procesar la imagen
         class_menu = tk.OptionMenu(self.gallery_processed_frame, self.selected_name, *class_names,
                                    command=lambda x: on_class_select(x))
 
         class_menu.grid(row=0, column=3, padx=5, pady=5)
 
         def on_class_select(selected_name):
+            # funcion para cuando se selecciona una nueva clase volver a mostrar la imagen
             selected_key = [key for key, value in class_dict.items() if value == selected_name][0]
             self.selected_class.set(selected_key)
             display_image(self.current_image_index)
 
 
         def display_image(index):
+            # funcion para mostrar la imagen procesada
             for label in self.img_labels:
                 label.destroy()
 
             image_name = images[index]
             image_path = os.path.join(image_directory, image_name)
-
+            # obtengo las clases seleccionadas
             selected_class = [self.selected_class.get()]
             self.model.classes = selected_class
-
+            # obtengo resultados del modelo con la clase seleccionada
             results = self.model.predict(source=image_path, save=False, classes=selected_class)
-
+            # guardo la imagen
             processed_img = results[0].plot()
             processed_img = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
-
+            # cambio las medidas de la imagen
             img_pil = Image.fromarray(processed_img)
             img_pil = img_pil.resize((800, 600), Image.Resampling.LANCZOS)
             img_photo = ImageTk.PhotoImage(img_pil)
@@ -927,11 +971,13 @@ class MapFrameClass:
         display_image(self.current_image_index)
 
         def next_image():
+            # funcion para mostrar la siguiente imagen
             if self.current_image_index < len(images) - 1:
                 self.current_image_index += 1
                 display_image(self.current_image_index)
 
         def prev_image():
+            # funcion para mostrar la imagen previa
             if self.current_image_index > 0:
                 self.current_image_index -= 1
                 display_image(self.current_image_index)
@@ -949,6 +995,8 @@ class MapFrameClass:
         back_button.grid(row=0, column=1, padx=20, pady=10, sticky="nsew")
 
     def show_main_page(self):
+        # funcion que elimina frames sobrepuestos al panel principal
+
         if self.gallery_frame:
             self.gallery_frame.grid_forget()
         if self.gallery_processed_frame:
@@ -958,9 +1006,13 @@ class MapFrameClass:
 
     # ======== INICIAR JUEGO ========
     def iniciar_juego(self):
-        self.stop_show_video()
+        # funcion para iniciar el juego
 
+        # llamo a stop_show_video para parar video de panel principal ya que ocasiona error si ambas estan en funcionamiento
+        self.stop_show_video()
+        # despego el dron
         self.arm_and_takeOff()
+        # inicializo la ventana de la camara
         self.cam_window = tk.Toplevel(self.MapFrame)
         self.cam_window.title("Detección de Objetos")
         self.cam_window.geometry("700x500")
@@ -970,27 +1022,32 @@ class MapFrameClass:
 
         self.game_video_label = tk.Label(self.video_frame)
         self.game_video_label.pack(padx=10, pady=10)
-
+        # llamo a update_frame para actualizar frame de la ventana
         self.update_frame()
-
+        # cuando cierro la ventana llamo a close_game_window que cierra ventana y activa video de panel principal
         self.cam_window.protocol("WM_DELETE_WINDOW", self.close_game_window)
 
     def update_frame(self):
+        # funcion que muestra el frame de la camara del juego y su ejecuta su funcionamiento
+
+        # leo el frame actual de la camara
         ret, frame = self.cap.read()
-        porcentaje_recon = 0.3 # Solo se reconocen objetos en recuadro central que ocupa 30% del frame
+        # solo se reconocen objetos en recuadro central que ocupa 30% del frame (porcentaje_recon*100 %)
+        porcentaje_recon = 0.3
         if ret:
+            # creo caja donde reconocer objetos usando la variable porcentaje_recon
             h, w = frame.shape[:2]
             center_x, center_y = w // 2, h // 2
             box_w, box_h = int(w * porcentaje_recon), int(h * porcentaje_recon)
             x1, y1 = center_x - box_w // 2, center_y - box_h // 2
             x2, y2 = center_x + box_w // 2, center_y + box_h // 2
-
+            # con las coordenadas calculadas creo el rectangulo
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-
+            # cojo frame solo del recuadro central
             roi = frame[y1:y2, x1:x2].copy()
-
-            results = self.model.predict(source=roi, save=False, classes=[51, 11, 38, 46, 74])
-
+            # obtengo resultado prediciendo usando el modelo para solo el frame del recuadro
+            results = self.model.predict(source=roi, save=False, classes=[51, 11, 38, 46, 74]) # clases: Zanahoria, Stop sign, Raqueta, Plátano, Reloj
+            # si se reconoce alguna clase
             if len(results[0].boxes) > 0:
                 for box in results[0].boxes:
                     box_coords = box.xyxy[0].clone().cpu().numpy()
@@ -999,77 +1056,91 @@ class MapFrameClass:
                     box_coords[1] += y1
                     box_coords[2] += x1
                     box_coords[3] += y1
-
+                    # se crea rectangulo
                     cv2.rectangle(frame,
                                   (int(box_coords[0]), int(box_coords[1])),
                                   (int(box_coords[2]), int(box_coords[3])),
                                   (255, 0, 0), 2)
-
+                    # se introduce nombre de clase como texto encima del cuadrado
                     label = f"{self.model.names[int(box.cls[0])]} {box.conf[0]:.2f}"
                     cv2.putText(frame, label,
                                 (int(box_coords[0]), int(box_coords[1]) - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
-
+            # se muestra el frame creado
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(frame)
             imgtk = ImageTk.PhotoImage(image=img)
             self.game_video_label.imgtk = imgtk
             self.game_video_label.config(image=imgtk)
-
+            # guardo las clases que se han detectado
             self.detected_objects = [int(box.cls[0]) for box in results[0].boxes] if len(results[0].boxes) > 0 else []
 
-            if 51 in self.detected_objects:  # Zanahoria
+            if 51 in self.detected_objects:  # Si se detecta Zanahoria dron va al norte
                 self.MapFrame.update_idletasks()
                 self.dron.go("North")
-            if 11 in self.detected_objects:  # Stop sign
+            if 11 in self.detected_objects:  # Si se detecta Stop sign dron hace RTL y se cierra la ventana
                 self.MapFrame.update_idletasks()
                 self.RTL()
                 self.close_game_window()
-            if 38 in self.detected_objects:  # Raqueta
+            if 38 in self.detected_objects:  # si se detecta Raqueta el dron va al sur
                 self.MapFrame.update_idletasks()
                 self.dron.go("South")
-            if 46 in self.detected_objects:  # Plátano
+            if 46 in self.detected_objects:  # si se detecta Platano el dron va al oeste
                 self.MapFrame.update_idletasks()
                 self.dron.go("West")
-            if 74 in self.detected_objects:  # Reloj
+            if 74 in self.detected_objects:  # si se detecta Reloj el dron va al este
                 self.MapFrame.update_idletasks()
                 self.dron.go("East")
 
         if self.cap:
+            # se muestra frame cada 10ms (llamada a la misma funcion)
             self.video_label.after(10, self.update_frame)
 
-    # ======== VIDEO CAMARA =======
+    # ======== VIDEO CAMARA ========
     def show_video(self):
+        # funcion que se encarga de mostrar video en panel principal
+
         if self.cap is None:
+            # si no se ha conectado a simulador o dron se espera 30ms y vuelve a intentar
             self.video_label.after(30, self.show_video)
             return
         ret, frame = self.cap.read()
         if ret:
+            # cambia tamaño de frame para ajustar en interfaz
             frame = cv2.resize(frame, (228, 171))
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(frame)
             imgtk = ImageTk.PhotoImage(image=img)
             self.video_label.imgtk = imgtk
             self.video_label.configure(image=imgtk)
-
+        # cada 30ms se llama a la misma funcion y se actualiza frame
         self._video_job = self.video_label.after(30, self.show_video)
 
     def stop_show_video(self):
+        # funcion para detener el video de panel principal. Se usa cuando se inicia juego para no tener multiples videos simultaneamente
+
         if hasattr(self, '_video_job'):
             self.video_label.after_cancel(self._video_job)
             self._video_job = None
 
     def close_game_window(self):
+        # funcion que cierra la ventana de video del juego
+
+        # cierro la ventana
         self.cam_window.destroy()
+        # vuelvo a mostrar video en panel principal
         self.show_video()
 
     # ======== PARAMETROS ========
     def aplicar_altura(self):
+        # funcion para cambiar altura de plan de vuelo a la introducida
+
         try:
+            # recibo la altura recibida por entrada
             nueva_altura = int(self.altura_entry.get())
             if nueva_altura <= 0:
                 raise ValueError("La altura debe ser mayor que 0")
-
+            # cambio la altura de vuelo
             self.altura_vuelo = nueva_altura
 
         except ValueError as e:
@@ -1078,13 +1149,16 @@ class MapFrameClass:
             self.altura_entry.insert(0, str(self.altura_vuelo))
 
     def aplicar_velocidad(self):
+        # funcion para cambiar velocidad de plan de vuelo a la introducida
+
         try:
+            # recibo la velocidad recibida por entrada
             nueva_velocidad = float(self.vel_entry.get())
             if nueva_velocidad <= 0:
                 raise ValueError("La velocidad debe ser mayor que 0")
 
             self.dron.navSpeed = nueva_velocidad
-
+        # cambio la velocidad de vuelo
         except ValueError as e:
             messagebox.showerror("Error", f"Dato inválido: {str(e)}")
             self.vel_entry.delete(0, tk.END)
