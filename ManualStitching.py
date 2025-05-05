@@ -9,14 +9,20 @@ from tkinter import messagebox
 
 class ManualImageStitching:
     def __init__(self, mission_name, MapFrame):
+        # guardo el path de la carpeta de imagenes de la mision seleccionada
         self.path = f"photos/{mission_name}"
+        # cargo las imagenes llamando a load_images
         self.images = self.load_images()
+        # guardo imagenes en escala de grises
         self.gray_images = [self.rgb2gray(img) for img in self.images]
         self.nombre_mision = mission_name
         self.stitch_frame = None
         self.MapFrame = MapFrame
 
+    # ======== CARGA Y TRATAMIENTO INICIAL IMAGENES ========
     def load_images(self):
+        # funcion que devuelve las imagenes del path
+
         images = []
         for filename in sorted(os.listdir(self.path)):
             if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
@@ -25,17 +31,28 @@ class ManualImageStitching:
         return images
 
     def rgb2gray(self, rgb):
+        #funcion que convierte imagen rgb a escala de grises
+
         return cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
 
+    # ======== ENCONTRAR KEYPOINTS Y CORRESPONDENCIAS ENTRE ELLOS ========
     def detect_and_compute(self, image):
+        # funcion que utiliza el algoritmo SIFT para detectar puntos clave y calcular sus descriptores en una imagen
+
         sift = cv2.SIFT_create(3000)
         return sift.detectAndCompute(image, None)
 
     def match_features(self, des1, des2):
+        # funcion que utiliza un comparador de fuerza bruta para encontrar correspondencias entre descriptores de dos imágenes
+
         bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
         return bf.match(des1, des2)
 
+    # ======== CREACION DE LA MATRIZ DE HOMOGRAFIA ========
     def DLT_homography(self, points1, points2):
+        # funcion que implementa el algoritmo DLT (Direct Linear Transform) para calcular una matriz
+        # de homografía (H) que relaciona dos conjuntos de puntos correspondientes en imágenes diferentes
+
         A = []
         for i in range(points1.shape[1]):
             x, y, _ = points1[:, i]
@@ -48,6 +65,10 @@ class ManualImageStitching:
         return H / H[2, 2]
 
     def find_homography_inliers(self, H, points1, points2, th):
+        # funcion que evalúa la calidad de una homografía (H) al medir cómo de bien transforma los puntos
+        # de una imagen (points1) a sus correspondientes puntos en otra imagen (points2). Luego, filtra
+        # los "inliers" (puntos que cumplen con un umbral de error th)
+
         try:
             transformed = np.dot(H, points1)
             transformed /= transformed[2]
@@ -57,6 +78,9 @@ class ManualImageStitching:
             return np.empty(0)
 
     def Ransac_DLT_homography_adaptive_loop(self, points1, points2, th=4, p=0.99):
+        #  implementa el algoritmo RANSAC de forma adaptativa para estimar una matriz
+        #  de homografía (H) robusta, incluso en presencia de outliers
+
         Ncoords, Npts = points1.shape
         s = 4
         best_inliers = np.empty(1)
@@ -78,7 +102,11 @@ class ManualImageStitching:
         H = self.DLT_homography(points1[:, best_inliers], points2[:, best_inliers])
         return H, best_inliers
 
+    # ======== IMPLEMENTACION TRANSFORMACION DDE HOMOGRAFIA ========
     def calculate_corners(self, img, H):
+        # funcion que calcula las nuevas esquinas de una imagen despues de aplicar
+        # una transformación de homografía (H)
+
         h, w = img.shape[:2]
         corners = np.array([
             [0, 0, 1],
@@ -98,6 +126,9 @@ class ManualImageStitching:
         return [x_min, x_max, y_min, y_max]
 
     def apply_H_fixed_image_size(self, img, H, corners):
+        # funcion que aplica una transformación de homografía (H) a una imagen (img) mientras ajusta el
+        # tamaño de salida para que toda la imagen transformada sea visible, evitando recortes
+
         x_min, x_max, y_min, y_max = corners
         out_size = (int(x_max - x_min), int(y_max - y_min))
         T = np.array([[1, 0, -x_min], [0, 1, -y_min], [0, 0, 1]])
@@ -106,66 +137,138 @@ class ManualImageStitching:
                                      borderMode=cv2.BORDER_REPLICATE)
         return warped
 
+    # ======== REALIZACION DEL STITCHING ========
     def stitch_images(self):
+
         if len(self.images) < 2:
             return self.images[0] if self.images else None
 
+        # inicialización del mosaico con la primera imagen
         current_mosaic = self.images[0].astype(np.float32)
-        current_H = np.eye(3)
-        weights = np.ones(current_mosaic.shape[:2], dtype=np.float32)
+        current_H = np.eye(3)  # Matriz de homografía inicial (identidad)
+        weights = np.ones(current_mosaic.shape[:2], dtype=np.float32)  # Mapa de pesos inicial
 
         for i in range(1, len(self.images)):
             print(f"Stitching image {i + 1}/{len(self.images)}")
 
-            kp1, des1 = self.detect_and_compute(self.gray_images[i - 1])
-            kp2, des2 = self.detect_and_compute(self.gray_images[i])
+            # --------------------------------------------------
+            # 1. DETECCIÓN DE CARACTERÍSTICAS Y MATCHING
+            # --------------------------------------------------
+
+            # detectar puntos clave y descriptores en ambas imágenes
+            kp1, des1 = self.detect_and_compute(self.gray_images[i - 1])  # Imagen anterior
+            kp2, des2 = self.detect_and_compute(self.gray_images[i])  # Imagen actual
+
+            # encontrar correspondencias entre descriptores
             matches = self.match_features(des1, des2)
 
+            # preparar puntos para la homografía (en coordenadas homogéneas)
             points1, points2 = [], []
             for m in matches:
                 points1.append([kp1[m.queryIdx].pt[0], kp1[m.queryIdx].pt[1], 1])
                 points2.append([kp2[m.trainIdx].pt[0], kp2[m.trainIdx].pt[1], 1])
 
-            points1 = np.array(points1).T
+            points1 = np.array(points1).T  # Convertir a formato 3xN
             points2 = np.array(points2).T
 
+            # --------------------------------------------------
+            # 2. ESTIMACIÓN DE HOMOGRAFÍA CON RANSAC
+            # --------------------------------------------------
+
+            # calcular homografía robusta usando RANSAC
             H, _ = self.Ransac_DLT_homography_adaptive_loop(points1, points2, th=4)
+
+            # actualizar homografía acumulada (composición de transformaciones)
             current_H = H @ current_H
 
+            # --------------------------------------------------
+            # 3. CALCULAR NUEVO ESPACIO DE MOSAICO
+            # --------------------------------------------------
+
+            # determinar esquinas transformadas para calcular tamaño de salida
             corners = self.calculate_corners(self.images[i], current_H)
             x_min, x_max, y_min, y_max = corners
-            out_size = (int(x_max - x_min), int(y_max - y_min))
+            out_size = (int(x_max - x_min), int(y_max - y_min))  # nuevas dimensiones
 
-            T = np.array([[1, 0, -x_min], [0, 1, -y_min], [0, 0, 1]])
-            mosaic_warped = cv2.warpPerspective(current_mosaic, T.dot(current_H), out_size,
-                                                flags=cv2.INTER_LINEAR)
-            weights_warped = cv2.warpPerspective(weights, T.dot(current_H), out_size,
-                                                 flags=cv2.INTER_LINEAR,
-                                                 borderMode=cv2.BORDER_CONSTANT,
-                                                 borderValue=0)
+            # matriz de traslación para evitar recortes
+            T = np.array([
+                [1, 0, -x_min],
+                [0, 1, -y_min],
+                [0, 0, 1]
+            ])
 
-            img_warped = cv2.warpPerspective(self.images[i].astype(np.float32),
-                                             T.dot(np.eye(3)), out_size,
-                                             flags=cv2.INTER_LINEAR)
-            img_weights = cv2.warpPerspective(np.ones(self.images[i].shape[:2], dtype=np.float32),
-                                              T.dot(np.eye(3)), out_size,
-                                              flags=cv2.INTER_LINEAR,
-                                              borderMode=cv2.BORDER_CONSTANT,
-                                              borderValue=0)
+            # --------------------------------------------------
+            # 4. TRANSFORMACIÓN DE IMÁGENES
+            # --------------------------------------------------
 
+            # aplicar transformación al mosaico actual
+            mosaic_warped = cv2.warpPerspective(
+                current_mosaic,
+                T.dot(current_H),  # homografía ajustada
+                out_size,
+                flags=cv2.INTER_LINEAR  # interpolación para calidad
+            )
+
+            # transformar los pesos del mosaico actual
+            weights_warped = cv2.warpPerspective(
+                weights,
+                T.dot(current_H),
+                out_size,
+                flags=cv2.INTER_LINEAR,
+                borderMode=cv2.BORDER_CONSTANT,  # rellenar con 0 fuera de bordes
+                borderValue=0
+            )
+
+            # transformar la nueva imagen al espacio del mosaico
+            img_warped = cv2.warpPerspective(
+                self.images[i].astype(np.float32),
+                T.dot(np.eye(3)),  # solo aplicación de traslación
+                out_size,
+                flags=cv2.INTER_LINEAR
+            )
+
+            # crear mapa de pesos para la nueva imagen
+            img_weights = cv2.warpPerspective(
+                np.ones(self.images[i].shape[:2], dtype=np.float32),
+                T.dot(np.eye(3)),
+                out_size,
+                flags=cv2.INTER_LINEAR,
+                borderMode=cv2.BORDER_CONSTANT,
+                borderValue=0  # 0 fuera de la imagen
+            )
+
+            # --------------------------------------------------
+            # 5. FUSIÓN PONDERADA DE IMÁGENES
+            # --------------------------------------------------
+
+            # calcular pesos totales
             total_weights = weights_warped + img_weights
             total_weights[total_weights == 0] = 1
 
-            current_mosaic = ((mosaic_warped * weights_warped[..., np.newaxis] +
-                               img_warped * img_weights[..., np.newaxis]) /
-                              total_weights[..., np.newaxis])
+            current_mosaic = (
+                    (mosaic_warped * weights_warped[..., np.newaxis] +
+                     img_warped * img_weights[..., np.newaxis]) /
+                    total_weights[..., np.newaxis]
+            )
 
+            # actualizar pesos acumulados
             weights = weights_warped + img_weights
+
+            # reiniciar homografia para la siguiente iteración
             current_H = np.eye(3)
 
+        # --------------------------------------------------
+        # 6. POST-PROCESAMIENTO FINAL
+        # --------------------------------------------------
+
+        # asegurar valores de píxel validos y convertir a formato uint8
         return np.clip(current_mosaic, 0, 255).astype(np.uint8)
 
+    # ======== MUESTRA DE STITCHING EN PANEL PRINCIPAL ========
     def show_manual_stitched_image(self):
+        # funcion que muestra la imagen resultante del stitching en el panel principal sobreponiendose
+        # a esta interfaz. El procedimiento es el miso que para las galerias y el stitching de OpenCV.
+
         if self.nombre_mision == "":
             messagebox.showerror("Selecciona Misión", "Selecciona una misión.")
             return

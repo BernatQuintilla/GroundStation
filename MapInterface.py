@@ -224,7 +224,7 @@ class MapFrameClass:
         self.StOpenCVBtn = tk.Button(self.galeria_frame, text="Stitching OpenCV", bg="dark orange", fg="black", command= self.show_stitched_image)
         self.StOpenCVBtn.grid(row=1, column=0, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        self.StSIFTBtn = tk.Button(self.galeria_frame, text="Stitching SIFT", bg="dark orange", fg="black", command= self.show_manual_stitched_image)
+        self.StSIFTBtn = tk.Button(self.galeria_frame, text="Stitching Manual", bg="dark orange", fg="black", command= self.show_manual_stitched_image)
         self.StSIFTBtn.grid(row=1, column=1, columnspan=1, padx=5, pady=3, sticky="nesw")
 
         # === FRAME PARÁMETROS ===
