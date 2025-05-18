@@ -477,7 +477,7 @@ class MapFrameClass:
             messagebox.showerror("Error", f"Establece conexión para crear la Geofence.")
             return
         map_window = tk.Toplevel()
-        map_window.title("Creador de Misiones")
+        map_window.title("Creador de Geofence")
         map_window.geometry("720x480")
         # llamo a la clase de creador de geofence
         map_geofence_class = GeoFenceCreator()
@@ -574,7 +574,7 @@ class MapFrameClass:
         # funcion que muestra interfaz de creacion de misiones
 
         map_window = tk.Toplevel()
-        map_window.title("Creador de Misiones")
+        map_window.title("Creador de Mision Stitching")
         map_window.geometry("300x150")
         # llamo a clase de creacion de misiones de stitching con input la variable dron, y los parametros de vuelo
         map_mission_stiching = StitchingMission(self.altura_vuelo, self.dron.navSpeed)
@@ -922,7 +922,7 @@ class MapFrameClass:
 
         # Diccionario de clases del modelo: (https://stackoverflow.com/questions/77477793/class-ids-and-their-relevant-class-names-for-yolov8-model#:~:text=I%20understand%20there%20are%20approximately,object%20detection%20model%20of%20YOLOv8.)
         # clases seleccionadas para procesar imagen
-        class_dict = {0: 'person',1: 'bicycle', 51: 'carrot', 46: 'banana', 38: 'tennis racket', 74: 'clock'}
+        class_dict = {0: 'person',11: 'stop sign', 51: 'carrot', 46: 'banana', 38: 'tennis racket', 74: 'clock'}
 
         self.selected_class = tk.IntVar()
         self.selected_class.set(0)

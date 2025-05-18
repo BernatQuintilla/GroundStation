@@ -83,6 +83,9 @@ class GeoFenceCreator:
     def update_geofence_polygon(self):
         # funcion para crear dibujo de geofence
 
+        if self.polygon:
+            self.polygon.delete()
+
         polygon_coords = [(wp['lat'], wp['lon']) for wp in self.waypoints]
         self.polygon = self.map_widget.set_polygon(
             polygon_coords,
