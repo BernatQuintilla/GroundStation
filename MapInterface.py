@@ -1010,8 +1010,11 @@ class MapFrameClass:
 
         # llamo a stop_show_video para parar video de panel principal ya que ocasiona error si ambas estan en funcionamiento
         self.stop_show_video()
+
         # despego el dron
+
         self.arm_and_takeOff()
+
         # inicializo la ventana de la camara
         self.cam_window = tk.Toplevel(self.MapFrame)
         self.cam_window.title("Detección de Objetos")
@@ -1075,6 +1078,8 @@ class MapFrameClass:
             # guardo las clases que se han detectado
             self.detected_objects = [int(box.cls[0]) for box in results[0].boxes] if len(results[0].boxes) > 0 else []
 
+
+            # esta parte de la funcion da las instrucciones al dron dependiendo del objeto reconocido
             if 51 in self.detected_objects:  # Si se detecta Zanahoria dron va al norte
                 self.MapFrame.update_idletasks()
                 self.dron.go("North")
