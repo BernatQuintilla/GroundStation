@@ -132,7 +132,7 @@ class MapFrameClass:
         self.RTLBtn = tk.Button(self.control_frame, text="RTL", bg="dark orange", fg="black",command=self.RTL)
         self.RTLBtn.grid(row=1, column=2, columnspan=1, padx=5, pady=3, sticky="nesw")
 
-        self.LandBtn = tk.Button(self.control_frame, text="Aterrizar", bg="dark orange", fg="black", command=self.dron.Land)
+        self.LandBtn = tk.Button(self.control_frame, text="Aterrizar", bg="dark orange", fg="black", command=self.Land)
         self.LandBtn.grid(row=1, column=1, columnspan=1, padx=5, pady=3, sticky="nesw")
 
         self.CambiarConexionBtn = tk.Button(self.control_frame, text="Cambiar a producción", bg="black", fg="white", command=self.change_connection)
@@ -324,6 +324,15 @@ class MapFrameClass:
                 self.MapFrame.after(0, lambda: self.informar('VOLANDO'))
         threading.Thread(target=takeoff_procedure, daemon=True).start()
 
+    def Land(self):
+        # funcion para ejecutar land
+
+        # llamo en modo no bloqueante y le indico qué función debe activar al acabar la operación, y qué parámetro debe usar
+        self.dron.Land(blocking=False, callback=self.informar,params='EN CASA')
+        # mientras se este ejecutando ponemos botón en amarillo
+        self.LandBtn['bg'] = 'yellow'
+        self.LandBtn['text'] = 'Retornando....'
+
     def RTL(self):
         # funcion para ejecutar RTL
 
@@ -360,6 +369,11 @@ class MapFrameClass:
             self.RTLBtn['bg'] = 'dark orange'
             self.RTLBtn['fg'] = 'black'
             self.RTLBtn['text'] = 'RTL'
+
+            self.LandBtn['bg'] = 'dark orange'
+            self.LandBtn['fg'] = 'black'
+            self.LandBtn['text'] = 'Aterrizar'
+
         if mensaje == "DESPEGANDO":
             self.RTL_active = True
             # boton despegar en amarillo
