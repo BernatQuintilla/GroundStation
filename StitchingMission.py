@@ -71,6 +71,8 @@ class StitchingMission:
         waypoints = []
 
         # creo variables que contienen puntos (lat, lon) de inicio y final de cada lado (esquinas DronLab)
+        #start_lat, start_lon = 41.276184, 1.988341
+        #end_lat, end_lon = 41.276261, 1.988684
         start_lat, start_lon = 41.2762224, 1.9883487
         end_lat, end_lon = 41.2763895, 1.9890720
         start_lat2, start_lon2 = end_lat, end_lon
