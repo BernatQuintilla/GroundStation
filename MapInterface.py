@@ -74,6 +74,7 @@ class MapFrameClass:
 
         # inicializo cámara
         self.cap = None
+        self.camara_activada = False
 
     # ======== BUILD FRAME PANEL PRINCIPAL ========
     def buildFrame(self, fatherFrame):
@@ -279,9 +280,7 @@ class MapFrameClass:
 
         self.video_label = tk.Label(self.camaravideo_frame)
         self.video_label.grid(row=0, column=0, columnspan=1, padx=5, pady=5, sticky="nsew")
-        # llamo a la función show_video que muestra video en vdeo_label
-        self.show_video()
-        self.GuardarFrameBtn = tk.Button(self.camaravideo_frame, text="Guardar Frame", bg="dark orange", fg="black", command=self.capture_and_save_photo)
+        self.GuardarFrameBtn = tk.Button(self.camaravideo_frame, text="Activar cámara", bg="dark orange", fg="black", command=self.capture_and_save_photo_video)
         self.GuardarFrameBtn.grid(row=1, column=0, columnspan = 4, padx=5, pady=3, sticky="nesw")
         self.map_frame = self.MapFrame
 
@@ -301,8 +300,6 @@ class MapFrameClass:
         self.GeoFence()
         # muestro el dron en pantalla
         self.show_dron()
-        # inicio cámara
-        self.cap = cv2.VideoCapture(self.camara_input)
         # llamo a unfixHeading para caso en que misión stitching haya sido interrumpida anteriormente
         self.dron.unfixHeading()
         self.isconnected = True
@@ -390,6 +387,9 @@ class MapFrameClass:
             self.CambiarConexionBtn['text'] = 'Cambiar a simulación'
         if mensaje == "SIMULACIÓN":
             self.CambiarConexionBtn['text'] = 'Cambiar a producción'
+        if mensaje == "CAMARA ACTIVADA":
+            self.camara_activada = True
+            self.GuardarFrameBtn['text'] = "Guardar Frame"
 
     # ======== MOSTRAR Y MODIFICAR ICONO DEL DRON ========
     def show_dron(self):
@@ -1050,7 +1050,7 @@ class MapFrameClass:
         # leo el frame actual de la camara
         ret, frame = self.cap.read()
         # solo se reconocen objetos en recuadro central que ocupa 30% del frame (porcentaje_recon*100 %)
-        porcentaje_recon = 0.3
+        porcentaje_recon = 0.6
         if ret:
             # creo caja donde reconocer objetos usando la variable porcentaje_recon
             h, w = frame.shape[:2]
@@ -1063,7 +1063,7 @@ class MapFrameClass:
             # cojo frame solo del recuadro central
             roi = frame[y1:y2, x1:x2].copy()
             # obtengo resultado prediciendo usando el modelo para solo el frame del recuadro
-            results = self.model.predict(source=roi, save=False, classes=[51, 11, 38, 46, 74]) # clases: Zanahoria, Stop sign, Raqueta, Plátano, Reloj
+            results = self.model.predict(source=roi, save=False, classes=[77, 11, 38, 46, 74]) # clases: Teddy Bear, Stop sign, Raqueta, Plátano, Reloj
             # si se reconoce alguna clase
             if len(results[0].boxes) > 0:
                 for box in results[0].boxes:
@@ -1094,7 +1094,7 @@ class MapFrameClass:
 
 
             # esta parte de la funcion da las instrucciones al dron dependiendo del objeto reconocido
-            if 51 in self.detected_objects:  # Si se detecta Zanahoria dron va al norte
+            if 77 in self.detected_objects:  # Si se detecta Teddy Bear dron va al norte
                 self.MapFrame.update_idletasks()
                 self.dron.go("North")
             if 11 in self.detected_objects:  # Si se detecta Stop sign dron hace RTL y se cierra la ventana
@@ -1149,6 +1149,19 @@ class MapFrameClass:
         self.cam_window.destroy()
         # vuelvo a mostrar video en panel principal
         self.show_video()
+
+    def capture_and_save_photo_video(self):
+        # esta funcion inicia la camara o guarda captura del frame en la carpeta de fotos de la mision
+
+        if self.camara_activada == False:
+            # inicio cámara
+            self.cap = cv2.VideoCapture(self.camara_input)
+            # llamo a la función show_video que muestra video en video_label
+            self.show_video()
+            self.informar('CAMARA ACTIVADA')
+
+        else:
+            self.capture_and_save_photo()
 
     # ======== PARAMETROS ========
     def aplicar_altura(self):
