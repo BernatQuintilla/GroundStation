@@ -30,4 +30,10 @@ Todos los paquetes necesarios están listados en un archivo llamado `requirement
 
 ## Explicación del código
 
+En este vídeo se explica la estructura del código y qué hace cada una de las funciones que lo conforman.
+
+[Code Ground Station](https://www.youtube.com/watch?v=2vAB8JKZi_E)
+
 ## Video demostrativo
+
+En este vídeo se muestran diferentes demos de la aplicación para mostrar el funcionamiento de las diversas funcionalidades de esta.
