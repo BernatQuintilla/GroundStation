@@ -238,6 +238,8 @@ class MapFrameClass:
         self.param_frame.rowconfigure(4, weight=2)
         self.param_frame.rowconfigure(5, weight=2)
         self.param_frame.rowconfigure(6, weight=2)
+        self.param_frame.rowconfigure(7, weight=2)
+        self.param_frame.rowconfigure(8, weight=2)
         self.param_frame.columnconfigure(0, weight=2)
         self.param_frame.columnconfigure(1, weight=2)
 
@@ -265,6 +267,12 @@ class MapFrameClass:
         self.geo_label.grid(row=5, column=0, columnspan=4, padx=5, pady=3, sticky="w")
         self.CrearGeoBtn = tk.Button(self.param_frame, text="Crear Geofence", bg="dark orange", fg="black", command=self.creadorGeoFence)
         self.CrearGeoBtn.grid(row=6, column=0, columnspan = 4, padx=5, pady=3, sticky="nesw")
+
+        self.disconnect_label = tk.Label(self.param_frame, text="Desconectar dron:", fg="black")
+        self.disconnect_label.grid(row=7, column=0, columnspan=4, padx=5, pady=3, sticky="w")
+        self.disconnectBtn = tk.Button(self.param_frame, text="Desconectar", bg="dark orange", fg="black",
+                                     command=self.desconectar)
+        self.disconnectBtn.grid(row=8, column=0, columnspan=4, padx=5, pady=3, sticky="nesw")
 
         # === FRAME VIDEO ===
         self.camaravideo_frame = tk.LabelFrame(self.MapFrame, text="Cámara dron")
@@ -341,6 +349,9 @@ class MapFrameClass:
         self.RTLBtn['bg'] = 'yellow'
         self.RTLBtn['text'] = 'Retornando....'
 
+    def desconectar(self):
+        self.informar('DESCONECTAR')
+
     # ======== INFORMAR ========
     def informar(self, mensaje):
         # En esta función se cambian los estados del dron para modificar colores en botones o el icono
@@ -370,6 +381,38 @@ class MapFrameClass:
             self.LandBtn['bg'] = 'dark orange'
             self.LandBtn['fg'] = 'black'
             self.LandBtn['text'] = 'Aterrizar'
+
+        if mensaje == "DESCONECTAR":
+
+            self.RTLBtn['bg'] = 'dark orange'
+            self.RTLBtn['fg'] = 'black'
+            self.dron.send_telemetry_info(self.process_telemetry_info)
+
+            # devuelvo los botones a la situación inicial
+
+            self.connectBtn['bg'] = 'dark orange'
+            self.connectBtn['fg'] = 'black'
+            self.connectBtn['text'] = 'Conectar'
+
+            self.despegarBtn['bg'] = 'dark orange'
+            self.despegarBtn['fg'] = 'black'
+            self.despegarBtn['text'] = 'Despegar'
+
+            self.RTLBtn['bg'] = 'dark orange'
+            self.RTLBtn['fg'] = 'black'
+            self.RTLBtn['text'] = 'RTL'
+
+            self.LandBtn['bg'] = 'dark orange'
+            self.LandBtn['fg'] = 'black'
+            self.LandBtn['text'] = 'Aterrizar'
+
+            # me desconecto del dron (eso tardará 5 segundos)
+
+            self.dron.disconnect()
+            self.cap.release()
+
+            self.camara_activada = False
+            self.GuardarFrameBtn['text'] = 'Activar cámara'
 
         if mensaje == "DESPEGANDO":
             self.RTL_active = True
@@ -1111,9 +1154,9 @@ class MapFrameClass:
                 self.MapFrame.update_idletasks()
                 self.dron.go("East")
 
-        if self.cap:
+        if self.cap and self.game_video_label.winfo_exists():
             # se muestra frame cada 10ms (llamada a la misma funcion)
-            self.video_label.after(10, self.update_frame)
+            self.cam_window.after(10, self.update_frame)
 
     # ======== VIDEO CAMARA ========
     def show_video(self):
