@@ -71,14 +71,22 @@ class StitchingMission:
         waypoints = []
 
         # creo variables que contienen puntos (lat, lon) de inicio y final de cada lado (esquinas DronLab)
-        #start_lat, start_lon = 41.276184, 1.988341
-        #end_lat, end_lon = 41.276261, 1.988684
+        '''
+        start_lat, start_lon = 41.276184, 1.988341
+        end_lat, end_lon = 41.276261, 1.988684 # Corta
+        end_lat, end_lon = 41.2763688, 1.9891356 # Completa
+        start_lat2, start_lon2 = end_lat, end_lon
+        end_lat2, end_lon2 = 41.2766225, 1.9890263
+        start_lat3, start_lon3 = end_lat2, end_lon2
+        end_lat3, end_lon3 = 41.2764242, 1.9882219
+        '''
         start_lat, start_lon = 41.2762224, 1.9883487
         end_lat, end_lon = 41.2763895, 1.9890720
         start_lat2, start_lon2 = end_lat, end_lon
         end_lat2, end_lon2 = 41.2765812, 1.9889918
         start_lat3, start_lon3 = end_lat2, end_lon2
         end_lat3, end_lon3 = 41.2764068, 1.9882689
+
         start_lat4, start_lon4 = end_lat3, end_lon3
         end_lat4, end_lon4 = start_lat, start_lon
         # image_width_meters contiene el numero de metros que la imagen tomada del dron ocupa
