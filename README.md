@@ -36,4 +36,11 @@ En este vídeo se explica la estructura del código y qué hace cada una de las 
 
 ## Video demostrativo
 
-En este vídeo se muestran diferentes demos de la aplicación para mostrar el funcionamiento de las diversas funcionalidades de esta.
+En este vídeo se muestran distintas demostraciones de la aplicación para ilustrar el funcionamiento de sus principales funcionalidades. El vídeo está compuesto por cuatro partes:  
+
+- **Ejecución de una misión en DronLab**, mostrando la operación del dron en el campo de pruebas.  
+- **Juego interactivo en entorno simulado**, ejecutando el juego de reconocimiento de objetos en entorno simulado.  
+- **Juego interactivo en DronLab**, mostrando la ejecución real del juego en el campo de pruebas.  
+- **Misión de stitching**, en la que se muestra la misión de stitching y los resultados obtenidos tras el procesamiento.
+
+[Application Demonstration](https://youtu.be/vOByR9sKV3s)
